@@ -1,0 +1,13 @@
+name = "VoronoiMeshDataStruct"
+uuid = "8a938a65-3ddb-45e8-9de7-ea9d95686e1a"
+authors = ["Felipe A. V. de Bragança Alves <favbalves@gmail.com> and contributors"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
