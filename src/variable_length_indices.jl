@@ -58,4 +58,5 @@ end
     end
 end
 
-@inline max_length(d::VariableLengthIndices{N,T}) where {N,T} = N
+@inline max_length(::VariableLengthIndices{N,T}) where {N,T} = N
+@inline max_length(::Type{VariableLengthIndices{N,T}}) where {N,T} = N

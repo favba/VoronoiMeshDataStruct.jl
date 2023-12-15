@@ -13,6 +13,7 @@ using Test
 
     @test length(a) == 5
     @test VoronoiMeshDataStruct.max_length(a) == 8
+    @test VoronoiMeshDataStruct.max_length(typeof(a)) == 8
 
     @test collect(a) == [1, 2, 3, 4, 5]
 
