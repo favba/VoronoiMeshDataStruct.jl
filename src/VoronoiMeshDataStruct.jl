@@ -1,5 +1,5 @@
 module VoronoiMeshDataStruct
 
-# Write your package code here.
+include("variable_length_indices.jl")
 
 end
