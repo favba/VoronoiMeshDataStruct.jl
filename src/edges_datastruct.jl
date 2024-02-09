@@ -5,7 +5,7 @@ struct EdgeConnectivity{TI<:Integer}
     cells::Vector{NTuple{2,TI}}
 end
 
-struct Edges{TI<:Integer, VAPos<:VecArray{<:Any,1}}
+struct EdgeBase{TI<:Integer, VAPos<:VecArray{<:Any,1}}
     """Edges connectivity data struct"""
     indices::EdgeConnectivity{TI}
     """Edge's x,y,z coordinates"""

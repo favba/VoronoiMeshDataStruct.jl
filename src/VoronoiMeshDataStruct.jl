@@ -3,9 +3,9 @@ module VoronoiMeshDataStruct
 using TensorsLite
 
 export VariableLengthIndices
-export CellConnectivity, Cells
-export VertexConnectivity, Vertices
-export EdgeConnectivity, Edges
+export CellConnectivity, CellBase, CellInfo
+export VertexConnectivity, VertexBase, VertexInfo
+export EdgeConnectivity, EdgeBase
 
 include("variable_length_indices.jl")
 
