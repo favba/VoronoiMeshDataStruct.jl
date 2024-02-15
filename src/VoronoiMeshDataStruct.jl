@@ -5,7 +5,7 @@ using TensorsLite
 export VariableLengthIndices
 export CellConnectivity, CellBase, CellInfo
 export VertexConnectivity, VertexBase, VertexInfo
-export EdgeConnectivity, EdgeBase
+export EdgeConnectivity, EdgeBase, EdgeVelocityReconstruction, EdgeInfo
 
 include("variable_length_indices.jl")
 

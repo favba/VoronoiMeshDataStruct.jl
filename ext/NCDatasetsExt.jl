@@ -138,5 +138,40 @@ function VoronoiMeshDataStruct.EdgeBase(ncfile::NCDatasets.NCDataset)
     return EdgeBase(indices,position)
 end
 
+function VoronoiMeshDataStruct.EdgeVelocityReconstruction(ncfile::NCDatasets.NCDataset)
+    nEdges = ncfile["nEdgesOnEdge"][:]
+    max_n_edges = maximum(nEdges)
+
+    edgesOnEdgeArray = ncfile["edgesOnEdge"]
+    indices = VariableLengthIndices{max_n_edges}.((edgesOnEdgeArray[1:max_n_edges,k]...,) for k in axes(edgesOnEdgeArray,2))
+    weights = ncfile["weightsOnEdge"][Base.OneTo(max_n_edges),:]
+    return EdgeVelocityReconstruction(nEdges,indices,weights)
+end
+
+const edge_info_vectors = (longitude="lonEdge", latitude="latEdge",
+                           indexToID="indexToEdgeID", dv="dvEdge", dc="dcEdge",
+                           angle="angleEdge", bdyMask="bdyMaskEdge")
+
+function VoronoiMeshDataStruct.EdgeInfo(ncfile::NCDatasets.NCDataset)
+    edgeinfo = EdgeInfo(EdgeBase(ncfile),EdgeVelocityReconstruction(ncfile))
+
+    for (field_name, nc_name) in pairs(edge_info_vectors)
+        if haskey(ncfile,nc_name)
+            setproperty!(edgeinfo,field_name,ncfile[nc_name][:])
+        end
+    end
+
+    if haskey(ncfile,"edgeNormalVectors")
+        env = ncfile["edgeNormalVectors"]
+        edgeinfo.normalVectors = VecArray(x=env[1,:], y=env[2,:], z=env[3,:])
+    end
+
+    if haskey(ncfile,"deriv_two")
+        edgeinfo.derivTwo = ncfile["deriv_two"][:,:,:]
+    end
+
+    return edgeinfo
+end
+
 
 end
