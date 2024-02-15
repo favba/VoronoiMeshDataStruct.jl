@@ -7,11 +7,11 @@ struct CellConnectivity{MAX_N_EDGES,TI<:Integer}
     cells::Vector{VariableLengthIndices{MAX_N_EDGES,TI}}
 end
 
-@inline Base.getproperty(cell::CellConnectivity,s::Symbol) = _getproperty(cell,Val(s))
-@inline _getproperty(cell::CellConnectivity,::Val{s}) where s = getfield(cell,s)
-@inline _getproperty(cell::CellConnectivity,::Val{:verticesOnCell}) = getfield(cell,:vertices)
-@inline _getproperty(cell::CellConnectivity,::Val{:edgesOnCell}) = getfield(cell,:edges)
-@inline _getproperty(cell::CellConnectivity,::Val{:cellsOnCell}) = getfield(cell,:cells)
+Base.getproperty(cell::CellConnectivity,s::Symbol) = _getproperty(cell,Val(s))
+_getproperty(cell::CellConnectivity,::Val{s}) where s = getfield(cell,s)
+_getproperty(cell::CellConnectivity,::Val{:verticesOnCell}) = getfield(cell,:vertices)
+_getproperty(cell::CellConnectivity,::Val{:edgesOnCell}) = getfield(cell,:edges)
+_getproperty(cell::CellConnectivity,::Val{:cellsOnCell}) = getfield(cell,:cells)
 
 max_n_edges(::Type{<:CellConnectivity{N}}) where N = N
 integer_precision(::Type{<:CellConnectivity{N,T}}) where {N,T} = T
@@ -25,15 +25,15 @@ struct CellBase{MAX_N_EDGES, TI<:Integer, VAPos<:VecArray{<:Any,1}}
     position::VAPos
 end
 
-@inline Base.getproperty(cell::CellBase,s::Symbol) = _getproperty(cell,Val(s))
-@inline _getproperty(cell::CellBase,::Val{s}) where s = getfield(cell,s)
+Base.getproperty(cell::CellBase,s::Symbol) = _getproperty(cell,Val(s))
+_getproperty(cell::CellBase,::Val{s}) where s = getfield(cell,s)
 for s in (:verticesOnCell,:edgesOnCell,:cellsOnCell)
     @eval _getproperty(cell::CellBase,::Val{$(QuoteNode(s))}) = getproperty(getfield(cell,:indices),$(QuoteNode(s)))
 end
-@inline _getproperty(cell::CellBase,::Val{:nEdgesOnCell}) = getfield(cell,:nEdges)
-@inline _getproperty(cell::CellBase,::Val{:xCell}) = getfield(cell,:position).x
-@inline _getproperty(cell::CellBase,::Val{:yCell}) = getfield(cell,:position).y
-@inline _getproperty(cell::CellBase,::Val{:zCell}) = getfield(cell,:position).z
+_getproperty(cell::CellBase,::Val{:nEdgesOnCell}) = getfield(cell,:nEdges)
+_getproperty(cell::CellBase,::Val{:xCell}) = getfield(cell,:position).x
+_getproperty(cell::CellBase,::Val{:yCell}) = getfield(cell,:position).y
+_getproperty(cell::CellBase,::Val{:zCell}) = getfield(cell,:position).z
 
 max_n_edges(::Type{<:CellBase{N}}) where N = N
 integer_precision(::Type{<:CellBase{N,T}}) where {N,T} = T
