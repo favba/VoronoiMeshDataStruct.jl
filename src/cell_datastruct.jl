@@ -7,6 +7,12 @@ struct CellConnectivity{MAX_N_EDGES,TI<:Integer}
     cells::Vector{VariableLengthIndices{MAX_N_EDGES,TI}}
 end
 
+@inline Base.getproperty(cell::CellConnectivity,s::Symbol) = _getproperty(cell,Val(s))
+@inline _getproperty(cell::CellConnectivity,::Val{s}) where s = getfield(cell,s)
+@inline _getproperty(cell::CellConnectivity,::Val{:verticesOnCell}) = getfield(cell,:vertices)
+@inline _getproperty(cell::CellConnectivity,::Val{:edgesOnCell}) = getfield(cell,:edges)
+@inline _getproperty(cell::CellConnectivity,::Val{:cellsOnCell}) = getfield(cell,:cells)
+
 max_n_edges(::Type{<:CellConnectivity{N}}) where N = N
 integer_precision(::Type{<:CellConnectivity{N,T}}) where {N,T} = T
 
@@ -18,6 +24,16 @@ struct CellBase{MAX_N_EDGES, TI<:Integer, VAPos<:VecArray{<:Any,1}}
     """Cell's x,y,z coordinates"""
     position::VAPos
 end
+
+@inline Base.getproperty(cell::CellBase,s::Symbol) = _getproperty(cell,Val(s))
+@inline _getproperty(cell::CellBase,::Val{s}) where s = getfield(cell,s)
+for s in (:verticesOnCell,:edgesOnCell,:cellsOnCell)
+    @eval _getproperty(cell::CellBase,::Val{$(QuoteNode(s))}) = getproperty(getfield(cell,:indices),$(QuoteNode(s)))
+end
+@inline _getproperty(cell::CellBase,::Val{:nEdgesOnCell}) = getfield(cell,:nEdges)
+@inline _getproperty(cell::CellBase,::Val{:xCell}) = getfield(cell,:position).x
+@inline _getproperty(cell::CellBase,::Val{:yCell}) = getfield(cell,:position).y
+@inline _getproperty(cell::CellBase,::Val{:zCell}) = getfield(cell,:position).z
 
 max_n_edges(::Type{<:CellBase{N}}) where N = N
 integer_precision(::Type{<:CellBase{N,T}}) where {N,T} = T
@@ -55,9 +71,22 @@ mutable struct CellInfo{TCells<:CellBase,TI<:Integer,TF<:Real}
     end
 end
 
-@inline Base.getproperty(cell::CellInfo,s::Symbol) = _getproperty(cell,Val(s))
+Base.getproperty(cell::CellInfo,s::Symbol) = _getproperty(cell,Val(s))
 
-@inline _getproperty(cell::CellInfo,::Val{s}) where s = getfield(cell,s)
-@inline _getproperty(cell::CellInfo,::Val{:indices}) = getfield(cell,:base).indices
-@inline _getproperty(cell::CellInfo,::Val{:nEdges}) = getfield(cell,:base).nEdges
-@inline _getproperty(cell::CellInfo,::Val{:position}) = getfield(cell,:base).position
+_getproperty(cell::CellInfo,::Val{s}) where s = getfield(cell,s)
+_getproperty(cell::CellInfo,::Val{:indices}) = getfield(cell,:base).indices
+_getproperty(cell::CellInfo,::Val{:nEdges}) = getfield(cell,:base).nEdges
+_getproperty(cell::CellInfo,::Val{:position}) = getfield(cell,:base).position
+
+for s in (:verticesOnCell,:edgesOnCell,:cellsOnCell,:xCell,:yCell,:zCell,:nEdgesOnCell)
+    @eval _getproperty(cell::CellInfo,::Val{$(QuoteNode(s))}) = getproperty(getfield(cell,:base),$(QuoteNode(s)))
+end
+
+for (s,nc) in pairs((longitude=:lonCell, latitude=:latCell, meshDensity=:meshDensity,
+                     indextoID=:indecToCellID, area=:areaCell, bdyMask=:bdyMaskCell,
+                     verticalUnitVectors=:localVerticalUnitVectors, tangentPlane=:cellTangentPlane,
+                     defcA=:defc_a, defcB=:defc_b, xGradientCoeff=:cell_gradient_coef_x,
+                     yGradientCoeff=:cell_gradient_coef_y, coeffsReconstruct=:coeffs_reconstruct))
+
+    @eval _getproperty(cell::CellInfo,::Val{$(QuoteNode(nc))}) = getfield(cell,$(QuoteNode(s)))
+end
