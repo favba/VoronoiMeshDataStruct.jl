@@ -38,7 +38,7 @@ const cell_info_vectors = (longitude="lonCell", latitude="latCell",
                           meshDensity="meshDensity",indexToID="indexToCellID",
                           area="areaCell", bdyMask="bdyMaskCell")
 
-const cell_info_matrices_max_edges = (defc_a="defc_a", defc_b="defc_b",
+const cell_info_matrices_max_edges = (defcA="defc_a", defcB="defc_b",
                                       xGradientCoeff="cell_gradient_coef_x", yGradientCoeff="cell_gradient_coef_y")
 
 function VoronoiMeshDataStruct.CellInfo(ncfile::NCDatasets.NCDataset)

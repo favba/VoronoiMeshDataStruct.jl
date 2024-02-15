@@ -40,9 +40,9 @@ mutable struct CellInfo{TCells<:CellBase,TI<:Integer,TF<:Real}
     """Tuple with pair of Vectors of Vec3D's structs defining the tangent plane at a cell"""
     tangentPlane::NTuple{2,Vec3DArray{TF,1}}
     """Coefficients for computing the off-diagonal components of the horizontal deformation"""
-    defc_a::Matrix{TF}
+    defcA::Matrix{TF}
     """Coefficients for computing the diagonal components of the horizontal deformation"""
-    defc_b::Matrix{TF}
+    defcB::Matrix{TF}
     """Coefficients for computing the x (zonal) derivative of a cell-centered variable"""
     xGradientCoeff::Matrix{TF}
     """Coefficients for computing the y (meridional) derivative of a cell-centered variable"""
