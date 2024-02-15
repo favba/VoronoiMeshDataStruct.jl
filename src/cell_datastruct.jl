@@ -83,7 +83,7 @@ for s in (:verticesOnCell,:edgesOnCell,:cellsOnCell,:xCell,:yCell,:zCell,:nEdges
 end
 
 for (s,nc) in pairs((longitude=:lonCell, latitude=:latCell, meshDensity=:meshDensity,
-                     indextoID=:indecToCellID, area=:areaCell, bdyMask=:bdyMaskCell,
+                     indexToID=:indexToCellID, area=:areaCell, bdyMask=:bdyMaskCell,
                      verticalUnitVectors=:localVerticalUnitVectors, tangentPlane=:cellTangentPlane,
                      defcA=:defc_a, defcB=:defc_b, xGradientCoeff=:cell_gradient_coef_x,
                      yGradientCoeff=:cell_gradient_coef_y, coeffsReconstruct=:coeffs_reconstruct))
