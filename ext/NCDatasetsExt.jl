@@ -2,6 +2,15 @@ module NCDatasetsExt
 
 using VoronoiMeshDataStruct, NCDatasets, TensorsLite
 
+function _on_a_sphere(ncfile::NCDatasets.NCDataset)
+    oas = lowercase(ncfile.attrib["on_a_sphere"])
+    if oas in ("yes","y")
+        return Val(true)
+    else
+        return Val(false)
+    end
+end
+
 function VoronoiMeshDataStruct.CellConnectivity(ncfile::NCDatasets.NCDataset)
     nEdgesOnCell = ncfile["nEdgesOnCell"][:]
     maxEdges = maximum(nEdgesOnCell)
@@ -31,7 +40,7 @@ function VoronoiMeshDataStruct.CellBase(ncfile::NCDatasets.NCDataset)
                         y=ncfile["yCell"][:],
                         z=ncfile["zCell"][:])
 
-    return CellBase(length(nEdges),indices,nEdges,position)
+    return CellBase(length(nEdges),indices,nEdges,position,_on_a_sphere(ncfile))
 end
 
 const cell_info_vectors = (longitude="lonCell", latitude="latCell",
@@ -94,7 +103,7 @@ function VoronoiMeshDataStruct.VertexBase(ncfile::NCDatasets.NCDataset)
                         y=ncfile["yVertex"][:],
                         z=ncfile["zVertex"][:])
 
-    return VertexBase(length(position.x),indices,position)
+    return VertexBase(length(position.x),indices,position,_on_a_sphere(ncfile))
 end
 
 const vertex_info_vectors = (longitude="lonVertex", latitude="latVertex",
@@ -135,7 +144,7 @@ function VoronoiMeshDataStruct.EdgeBase(ncfile::NCDatasets.NCDataset)
                         y=ncfile["yEdge"][:],
                         z=ncfile["zEdge"][:])
 
-    return EdgeBase(length(position.x),indices,position)
+    return EdgeBase(length(position.x),indices,position,_on_a_sphere(ncfile))
 end
 
 function VoronoiMeshDataStruct.EdgeVelocityReconstruction(ncfile::NCDatasets.NCDataset)

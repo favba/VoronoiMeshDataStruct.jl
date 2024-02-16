@@ -16,7 +16,7 @@ _getproperty(cell::CellConnectivity,::Val{:cellsOnCell}) = getfield(cell,:cells)
 max_n_edges(::Type{<:CellConnectivity{N}}) where N = N
 integer_precision(::Type{<:CellConnectivity{N,T}}) where {N,T} = T
 
-struct CellBase{MAX_N_EDGES, TI<:Integer, VAPos<:VecArray{<:Any,1}}
+struct CellBase{MAX_N_EDGES, TI<:Integer, VAPos<:VecArray{<:Any,1},S}
     n::Int
     """Cells connectivity data struct"""
     indices::CellConnectivity{MAX_N_EDGES,TI} 
@@ -24,7 +24,13 @@ struct CellBase{MAX_N_EDGES, TI<:Integer, VAPos<:VecArray{<:Any,1}}
     nEdges::Vector{TI} 
     """Cell's x,y,z coordinates"""
     position::VAPos
+    onSphere::Val{S}
 end
+
+max_n_edges(::Type{<:CellBase{N}}) where N = N
+integer_precision(::Type{<:CellBase{N,T}}) where {N,T} = T
+float_precision(::Type{<:CellBase{N,T,V}}) where {N,T,V} = TensorsLite._my_eltype(eltype(V))
+on_a_sphere(::Type{<:CellBase{N,T,V,bool}}) where {N,T,V,bool} = bool
 
 Base.getproperty(cell::CellBase,s::Symbol) = _getproperty(cell,Val(s))
 _getproperty(cell::CellBase,::Val{s}) where s = getfield(cell,s)
@@ -36,10 +42,6 @@ _getproperty(cell::CellBase,::Val{:nEdgesOnCell}) = getfield(cell,:nEdges)
 _getproperty(cell::CellBase,::Val{:xCell}) = getfield(cell,:position).x
 _getproperty(cell::CellBase,::Val{:yCell}) = getfield(cell,:position).y
 _getproperty(cell::CellBase,::Val{:zCell}) = getfield(cell,:position).z
-
-max_n_edges(::Type{<:CellBase{N}}) where N = N
-integer_precision(::Type{<:CellBase{N,T}}) where {N,T} = T
-float_precision(::Type{<:CellBase{N,T,V}}) where {N,T,V} = TensorsLite._my_eltype(eltype(V))
 
 mutable struct CellInfo{TCells<:CellBase,TI<:Integer,TF<:Real}
     const base::TCells
@@ -72,6 +74,8 @@ mutable struct CellInfo{TCells<:CellBase,TI<:Integer,TF<:Real}
         return new{TCells,integer_precision(TCells),float_precision(TCells)}(cell)
     end
 end
+
+on_a_sphere(::Type{<:CellInfo{TB}}) where TB = on_a_sphere(TB)
 
 Base.getproperty(cell::CellInfo,s::Symbol) = _getproperty(cell,Val(s))
 
