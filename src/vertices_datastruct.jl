@@ -13,6 +13,7 @@ _getproperty(vertex::VertexConnectivity,::Val{:edgesOnVertex}) = getfield(vertex
 _getproperty(vertex::VertexConnectivity,::Val{:cellsOnVertex}) = getfield(vertex,:cells)
 
 struct VertexBase{TI<:Integer, VAPos<:VecArray{<:Any,1}}
+    n::Int
     """Vertices connectivity data struct"""
     indices::VertexConnectivity{TI}
     """Vertex's x,y,z coordinates"""
@@ -24,6 +25,7 @@ float_precision(::Type{<:VertexBase{T,V}}) where {T,V} = TensorsLite._my_eltype(
 
 Base.getproperty(vertex::VertexBase,s::Symbol) = _getproperty(vertex,Val(s))
 _getproperty(vertex::VertexBase,::Val{s}) where s = getfield(vertex,s)
+_getproperty(vertex::VertexBase,::Val{:nVertices}) where s = getfield(vertex,:n)
 _getproperty(vertex::VertexBase,::Val{:edgesOnVertex}) = getfield(vertex,:indices).edges
 _getproperty(vertex::VertexBase,::Val{:cellsOnVertex}) = getfield(vertex,:indices).cells
 _getproperty(vertex::VertexBase,::Val{:xVertex}) = getfield(vertex,:position).x
@@ -54,10 +56,11 @@ float_precision(::Type{<:VertexInfo{TV,TI,TF}}) where {TV,TI,TF} = TF
 Base.getproperty(vertex::VertexInfo,s::Symbol) = _getproperty(vertex,Val(s))
 
 _getproperty(vertex::VertexInfo,::Val{s}) where s = getfield(vertex,s)
+_getproperty(vertex::VertexInfo,::Val{:n}) = getfield(vertex,:base).n
 _getproperty(vertex::VertexInfo,::Val{:indices}) = getfield(vertex,:base).indices
 _getproperty(vertex::VertexInfo,::Val{:position}) = getfield(vertex,:base).position
 
-for s in (:cellsOnVertex,:edgesOnVertex,:xVertex,:yVertex,:zVertex)
+for s in (:nVertices,:cellsOnVertex,:edgesOnVertex,:xVertex,:yVertex,:zVertex)
     @eval _getproperty(vertex::VertexInfo,::Val{$(QuoteNode(s))}) = getproperty(getfield(vertex,:base),$(QuoteNode(s)))
 end
 

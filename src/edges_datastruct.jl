@@ -14,6 +14,7 @@ _getproperty(edge::EdgeConnectivity,::Val{:cellsOnEdge}) = getfield(edge,:cells)
 
 
 struct EdgeBase{TI<:Integer, VAPos<:VecArray{<:Any,1}}
+    n::Int
     """Edges connectivity data struct"""
     indices::EdgeConnectivity{TI}
     """Edge's x,y,z coordinates"""
@@ -25,6 +26,7 @@ float_precision(::Type{<:EdgeBase{T,V}}) where {T,V} = TensorsLite._my_eltype(el
 
 Base.getproperty(edge::EdgeBase,s::Symbol) = _getproperty(edge,Val(s))
 _getproperty(edge::EdgeBase,::Val{s}) where s = getfield(edge,s)
+_getproperty(edge::EdgeBase,::Val{:nEdges}) where s = getfield(edge,:n)
 _getproperty(edge::EdgeBase,::Val{:verticesOnEdge}) = getfield(edge,:indices).vertices
 _getproperty(edge::EdgeBase,::Val{:cellsOnEdge}) = getfield(edge,:indices).cells
 _getproperty(edge::EdgeBase,::Val{:xEdge}) = getfield(edge,:position).x
@@ -81,7 +83,7 @@ max_n_edges_vel_reconstruction(::Type{<:EdgeInfo{TB,TI,TF,TEV}}) where {TB,TI,TF
 Base.getproperty(edge::EdgeInfo,s::Symbol) = _getproperty(edge,Val(s))
 _getproperty(edge::EdgeInfo,::Val{s}) where s = getfield(edge,s)
 
-for s in (:indices,:position,:verticesOnEdge,:cellsOnEdge,:xEdge,:yEdge,:zEdge)
+for s in (:nEdges,:n,:indices,:position,:verticesOnEdge,:cellsOnEdge,:xEdge,:yEdge,:zEdge)
     @eval _getproperty(edge::EdgeInfo,::Val{$(QuoteNode(s))}) = getproperty(getfield(edge,:base),$(QuoteNode(s)))
 end
 

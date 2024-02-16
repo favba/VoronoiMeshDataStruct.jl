@@ -17,6 +17,7 @@ max_n_edges(::Type{<:CellConnectivity{N}}) where N = N
 integer_precision(::Type{<:CellConnectivity{N,T}}) where {N,T} = T
 
 struct CellBase{MAX_N_EDGES, TI<:Integer, VAPos<:VecArray{<:Any,1}}
+    n::Int
     """Cells connectivity data struct"""
     indices::CellConnectivity{MAX_N_EDGES,TI} 
     """Cell's number of edges (and vertices)"""
@@ -30,6 +31,7 @@ _getproperty(cell::CellBase,::Val{s}) where s = getfield(cell,s)
 for s in (:verticesOnCell,:edgesOnCell,:cellsOnCell)
     @eval _getproperty(cell::CellBase,::Val{$(QuoteNode(s))}) = getproperty(getfield(cell,:indices),$(QuoteNode(s)))
 end
+_getproperty(cell::CellBase,::Val{:nCells}) = getfield(cell,:n)
 _getproperty(cell::CellBase,::Val{:nEdgesOnCell}) = getfield(cell,:nEdges)
 _getproperty(cell::CellBase,::Val{:xCell}) = getfield(cell,:position).x
 _getproperty(cell::CellBase,::Val{:yCell}) = getfield(cell,:position).y
@@ -74,11 +76,12 @@ end
 Base.getproperty(cell::CellInfo,s::Symbol) = _getproperty(cell,Val(s))
 
 _getproperty(cell::CellInfo,::Val{s}) where s = getfield(cell,s)
+_getproperty(cell::CellInfo,::Val{:n}) = getfield(cell,:base).n
 _getproperty(cell::CellInfo,::Val{:indices}) = getfield(cell,:base).indices
 _getproperty(cell::CellInfo,::Val{:nEdges}) = getfield(cell,:base).nEdges
 _getproperty(cell::CellInfo,::Val{:position}) = getfield(cell,:base).position
 
-for s in (:verticesOnCell,:edgesOnCell,:cellsOnCell,:xCell,:yCell,:zCell,:nEdgesOnCell)
+for s in (:nCells,:verticesOnCell,:edgesOnCell,:cellsOnCell,:xCell,:yCell,:zCell,:nEdgesOnCell)
     @eval _getproperty(cell::CellInfo,::Val{$(QuoteNode(s))}) = getproperty(getfield(cell,:base),$(QuoteNode(s)))
 end
 
