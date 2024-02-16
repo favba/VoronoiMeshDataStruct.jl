@@ -173,5 +173,8 @@ function VoronoiMeshDataStruct.EdgeInfo(ncfile::NCDatasets.NCDataset)
     return edgeinfo
 end
 
+function VoronoiMeshDataStruct.VoronoiMesh(ncfile::NCDatasets.NCDataset)
+    return VoronoiMesh(VertexInfo(ncfile),CellInfo(ncfile),EdgeInfo(ncfile)) 
+end
 
 end
