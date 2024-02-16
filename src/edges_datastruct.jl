@@ -7,6 +7,12 @@ end
 
 integer_precision(::Type{<:EdgeConnectivity{TI}}) where TI = TI
 
+Base.getproperty(edge::EdgeConnectivity,s::Symbol) = _getproperty(edge,Val(s))
+_getproperty(edge::EdgeConnectivity,::Val{s}) where s = getfield(edge,s)
+_getproperty(edge::EdgeConnectivity,::Val{:verticesOnEdge}) = getfield(edge,:vertices)
+_getproperty(edge::EdgeConnectivity,::Val{:cellsOnEdge}) = getfield(edge,:cells)
+
+
 struct EdgeBase{TI<:Integer, VAPos<:VecArray{<:Any,1}}
     """Edges connectivity data struct"""
     indices::EdgeConnectivity{TI}
@@ -16,6 +22,14 @@ end
 
 integer_precision(::Type{<:EdgeBase{TI}}) where TI = TI
 float_precision(::Type{<:EdgeBase{T,V}}) where {T,V} = TensorsLite._my_eltype(eltype(V))
+
+Base.getproperty(edge::EdgeBase,s::Symbol) = _getproperty(edge,Val(s))
+_getproperty(edge::EdgeBase,::Val{s}) where s = getfield(edge,s)
+_getproperty(edge::EdgeBase,::Val{:verticesOnEdge}) = getfield(edge,:indices).vertices
+_getproperty(edge::EdgeBase,::Val{:cellsOnEdge}) = getfield(edge,:indices).cells
+_getproperty(edge::EdgeBase,::Val{:xEdge}) = getfield(edge,:position).x
+_getproperty(edge::EdgeBase,::Val{:yEdge}) = getfield(edge,:position).y
+_getproperty(edge::EdgeBase,::Val{:zEdge}) = getfield(edge,:position).z
 
 struct EdgeVelocityReconstruction{MAX_N_EDGES,TI<:Integer,TF}
     """Number of edges involved in reconstruction of tangential velocity for an edge"""
@@ -27,6 +41,12 @@ struct EdgeVelocityReconstruction{MAX_N_EDGES,TI<:Integer,TF}
 end
 
 max_n_edges_vel_reconstruction(::Type{<:EdgeVelocityReconstruction{N}}) where N = N
+
+Base.getproperty(edge::EdgeVelocityReconstruction,s::Symbol) = _getproperty(edge,Val(s))
+_getproperty(edge::EdgeVelocityReconstruction,::Val{s}) where s = getfield(edge,s)
+_getproperty(edge::EdgeVelocityReconstruction,::Val{:nEdgesOnEdge}) = getfield(edge,:nEdges)
+_getproperty(edge::EdgeVelocityReconstruction,::Val{:edgesOnEdge}) = getfield(edge,:indices)
+_getproperty(edge::EdgeVelocityReconstruction,::Val{:weightsOnEdge}) = getfield(edge,:weights)
 
 mutable struct EdgeInfo{TEdgeBase,TI<:Integer,TF<:Real,TEdgeVelRecon<:EdgeVelocityReconstruction}
     const base::TEdgeBase
@@ -57,3 +77,22 @@ end
 integer_precision(::Type{<:EdgeInfo{TB,TI}}) where {TB,TI} = TI
 float_precision(::Type{<:EdgeInfo{TB,TI,TF}}) where {TB,TI,TF} = TF
 max_n_edges_vel_reconstruction(::Type{<:EdgeInfo{TB,TI,TF,TEV}}) where {TB,TI,TF,TEV} = max_n_edges_vel_reconstruction(TEV)
+
+Base.getproperty(edge::EdgeInfo,s::Symbol) = _getproperty(edge,Val(s))
+_getproperty(edge::EdgeInfo,::Val{s}) where s = getfield(edge,s)
+
+for s in (:indices,:position,:verticesOnEdge,:cellsOnEdge,:xEdge,:yEdge,:zEdge)
+    @eval _getproperty(edge::EdgeInfo,::Val{$(QuoteNode(s))}) = getproperty(getfield(edge,:base),$(QuoteNode(s)))
+end
+
+for s in (:nEdgesOnEdge, :edgesOnEdge, :weightsOnEdge)
+    @eval _getproperty(edge::EdgeInfo,::Val{$(QuoteNode(s))}) = getproperty(getfield(edge,:velRecon),$(QuoteNode(s)))
+end
+
+for (s,nc) in pairs((longitude=:lonEdge, latitude=:latEdge,
+                     indexToID=:indexToEdgeID, dv=:dvEdge, bdyMask=:bdyMaskEdge,
+                     dc=:dcEdge, angle=:angleEdge,
+                     normalVectors=:edgeNormalVectors, derivTwo=:deriv_two))
+
+    @eval _getproperty(edge::EdgeInfo,::Val{$(QuoteNode(nc))}) = getfield(edge,$(QuoteNode(s)))
+end
