@@ -8,6 +8,8 @@ export VertexConnectivity, VertexBase, VertexInfo
 export EdgeConnectivity, EdgeBase, EdgeVelocityReconstruction, EdgeInfo
 export VoronoiMesh
 
+export on_a_sphere, max_n_edges, max_n_edges_vel_reconstruction, float_precision, integer_precision
+
 include("variable_length_indices.jl")
 
 include("cell_datastruct.jl")
