@@ -16,21 +16,21 @@ _getproperty(cell::CellConnectivity,::Val{:cellsOnCell}) = getfield(cell,:cells)
 max_n_edges(::Type{<:CellConnectivity{N}}) where N = N
 integer_precision(::Type{<:CellConnectivity{N,T}}) where {N,T} = T
 
-struct CellBase{MAX_N_EDGES, TI<:Integer, VAPos<:VecArray{<:Any,1},S}
+struct CellBase{MAX_N_EDGES,S,TI<:Integer,TF<:Real,Tz<:Number,TVec}
     n::Int
     """Cells connectivity data struct"""
     indices::CellConnectivity{MAX_N_EDGES,TI} 
     """Cell's number of edges (and vertices)"""
     nEdges::Vector{TI} 
     """Cell's x,y,z coordinates"""
-    position::VAPos
+    position::VecArray{Vec{TVec,1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
     onSphere::Val{S}
 end
 
 max_n_edges(::Type{<:CellBase{N}}) where N = N
-integer_precision(::Type{<:CellBase{N,T}}) where {N,T} = T
-float_precision(::Type{<:CellBase{N,T,V}}) where {N,T,V} = TensorsLite._my_eltype(eltype(V))
-on_a_sphere(::Type{<:CellBase{N,T,V,bool}}) where {N,T,V,bool} = bool
+on_a_sphere(::Type{<:CellBase{N,B}}) where {N,B} = B
+integer_precision(::Type{<:CellBase{N,B,T}}) where {N,B,T} = T
+float_precision(::Type{<:CellBase{N,B,T,TF}}) where {N,B,T,TF} = TF
 
 Base.getproperty(cell::CellBase,s::Symbol) = _getproperty(cell,Val(s))
 _getproperty(cell::CellBase,::Val{s}) where s = getfield(cell,s)
@@ -43,8 +43,8 @@ _getproperty(cell::CellBase,::Val{:xCell}) = getfield(cell,:position).x
 _getproperty(cell::CellBase,::Val{:yCell}) = getfield(cell,:position).y
 _getproperty(cell::CellBase,::Val{:zCell}) = getfield(cell,:position).z
 
-mutable struct CellInfo{TCells<:CellBase,TI<:Integer,TF<:Real}
-    const base::TCells
+mutable struct CellInfo{MAX_N_EDGES,S,TI<:Integer,TF<:Real,Tz<:Number,TVec}
+    const base::CellBase{MAX_N_EDGES,S,TI,TF,Tz,TVec}
     longitude::Vector{TF}
     latitude::Vector{TF}
     """Mesh density function evaluated at cell (used when generating the cell)"""
@@ -56,9 +56,9 @@ mutable struct CellInfo{TCells<:CellBase,TI<:Integer,TF<:Real}
     """Indicator of whether a cell is an interior cell, a relaxation-zone cell, or a specified-zone cell"""
     bdyMask::Vector{TI}
     """Cartesian components of the vector pointing in the local vertical direction for a cell"""
-    verticalUnitVectors::Vec3DArray{TF,1}
+    verticalUnitVectors::VecArray{Vec{TVec,1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
     """Tuple with pair of Vectors of Vec3D's structs defining the tangent plane at a cell"""
-    tangentPlane::NTuple{2,Vec3DArray{TF,1}}
+    tangentPlane::NTuple{2,VecArray{Vec{TVec,1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}}
     """Coefficients for computing the off-diagonal components of the horizontal deformation"""
     defcA::Matrix{TF}
     """Coefficients for computing the diagonal components of the horizontal deformation"""
@@ -68,14 +68,17 @@ mutable struct CellInfo{TCells<:CellBase,TI<:Integer,TF<:Real}
     """Coefficients for computing the y (meridional) derivative of a cell-centered variable"""
     yGradientCoeff::Matrix{TF}
     """Coefficients to reconstruct velocity vectors at cell centers"""
-    coeffsReconstruct::Vec3DArray{TF,2}
+    coeffsReconstruct::VecArray{Vec{TVec,1,TF,TF,Tz},2,Array{TF,2},Array{TF,2},Array{Tz,2}}
 
-    function CellInfo(cell::TCells) where TCells<:CellBase
-        return new{TCells,integer_precision(TCells),float_precision(TCells)}(cell)
+    function CellInfo(cell::CellBase{N,S,TI,TF,Tz,Tv}) where {N,S,TI,TF,Tz,Tv}
+        return new{N,S,TI,TF,Tz,Tv}(cell)
     end
 end
 
-on_a_sphere(::Type{<:CellInfo{TB}}) where TB = on_a_sphere(TB)
+max_n_edges(::Type{<:CellInfo{N}}) where N = N
+on_a_sphere(::Type{<:CellInfo{N,B}}) where {N,B} = B
+integer_precision(::Type{<:CellInfo{N,B,T}}) where {N,B,T} = T
+float_precision(::Type{<:CellInfo{N,B,T,TF}}) where {N,B,T,TF} = TF
 
 Base.getproperty(cell::CellInfo,s::Symbol) = _getproperty(cell,Val(s))
 

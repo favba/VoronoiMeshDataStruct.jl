@@ -5,9 +5,9 @@ using VoronoiMeshDataStruct, NCDatasets, TensorsLite
 function _on_a_sphere(ncfile::NCDatasets.NCDataset)
     oas = lowercase(ncfile.attrib["on_a_sphere"])
     if oas in ("yes","y")
-        return Val(true)
+        return (Val(true), true)
     else
-        return Val(false)
+        return (Val(false), false)
     end
 end
 
@@ -36,11 +36,11 @@ function VoronoiMeshDataStruct.CellBase(ncfile::NCDatasets.NCDataset)
     maxEdges = maximum(nEdges)
     indices = CellConnectivity(maxEdges,ncfile)
     
-    position = VecArray(x=ncfile["xCell"][:],
-                        y=ncfile["yCell"][:],
-                        z=ncfile["zCell"][:])
+    onSphere, on_sphere = _on_a_sphere(ncfile)
 
-    return CellBase(length(nEdges),indices,nEdges,position,_on_a_sphere(ncfile))
+    position = on_sphere ? VecArray(x=ncfile["xCell"][:], y=ncfile["yCell"][:], z=ncfile["zCell"][:]) : VecArray(x=ncfile["xCell"][:], y=ncfile["yCell"][:])
+
+    return CellBase(length(nEdges),indices,nEdges,position,onSphere)
 end
 
 const cell_info_vectors = (longitude="lonCell", latitude="latCell",
@@ -51,6 +51,8 @@ const cell_info_matrices_max_edges = (defcA="defc_a", defcB="defc_b",
                                       xGradientCoeff="cell_gradient_coef_x", yGradientCoeff="cell_gradient_coef_y")
 
 function VoronoiMeshDataStruct.CellInfo(ncfile::NCDatasets.NCDataset)
+
+    _, on_sphere = _on_a_sphere(ncfile)
     cells = CellBase(ncfile)
     max_nedges = VoronoiMeshDataStruct.max_n_edges(typeof(cells))
     cellinfo = CellInfo(cells)
@@ -63,12 +65,14 @@ function VoronoiMeshDataStruct.CellInfo(ncfile::NCDatasets.NCDataset)
 
     if haskey(ncfile,"localVerticalUnitVectors")
         lvuva = ncfile["localVerticalUnitVectors"]
-        cellinfo.verticalUnitVectors = VecArray(x=lvuva[1,:], y=lvuva[2,:], z=lvuva[3,:])
+        cellinfo.verticalUnitVectors = on_sphere ? VecArray(x=lvuva[1,:], y=lvuva[2,:], z=lvuva[3,:]) : VecArray(x=lvuva[1,:], y=lvuva[2,:])
     end
 
     if haskey(ncfile,"cellTangentPlane")
         ctp = ncfile["cellTangentPlane"]
-        cellinfo.tangentPlane = (VecArray(x=ctp[1,1,:],y=ctp[2,1,:],z=ctp[3,1,:]),VecArray(x=ctp[1,2,:],y=ctp[2,2,:],z=ctp[3,2,:]))
+        cellinfo.tangentPlane = on_sphere ?
+                                (VecArray(x=ctp[1,1,:],y=ctp[2,1,:],z=ctp[3,1,:]),VecArray(x=ctp[1,2,:],y=ctp[2,2,:],z=ctp[3,2,:])) :
+                                (VecArray(x=ctp[1,1,:],y=ctp[2,1,:]),VecArray(x=ctp[1,2,:],y=ctp[2,2,:]))
     end
 
     sl = Base.OneTo(max_nedges)
@@ -81,7 +85,9 @@ function VoronoiMeshDataStruct.CellInfo(ncfile::NCDatasets.NCDataset)
     if haskey(ncfile,"coeffs_reconstruct")
         coeffR = ncfile["coeffs_reconstruct"]
         sl = Base.OneTo(max_nedges)
-        coeffsReconstruct = VecArray(x=coeffR[1,sl,:], y=coeffR[2,sl,:], z=coeffR[3,sl,:])
+        coeffsReconstruct = on_sphere ?
+                            VecArray(x=coeffR[1,sl,:], y=coeffR[2,sl,:], z=coeffR[3,sl,:]) :
+                            VecArray(x=coeffR[1,sl,:], y=coeffR[2,sl,:])
         cellinfo.coeffsReconstruct = coeffsReconstruct
     end
 
