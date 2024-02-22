@@ -13,18 +13,18 @@ _getproperty(edge::EdgeConnectivity,::Val{:verticesOnEdge}) = getfield(edge,:ver
 _getproperty(edge::EdgeConnectivity,::Val{:cellsOnEdge}) = getfield(edge,:cells)
 
 
-struct EdgeBase{TI<:Integer, VAPos<:VecArray{<:Any,1},S}
+struct EdgeBase{S,TI<:Integer, TF<:Real,Tz<:Number,TVec}
     n::Int
     """Edges connectivity data struct"""
     indices::EdgeConnectivity{TI}
     """Edge's x,y,z coordinates"""
-    position::VAPos
+    position::VecArray{Vec{TVec,1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
     onSphere::Val{S}
 end
 
-integer_precision(::Type{<:EdgeBase{TI}}) where TI = TI
-float_precision(::Type{<:EdgeBase{T,V}}) where {T,V} = TensorsLite._my_eltype(eltype(V))
-on_a_sphere(::Type{<:EdgeBase{T,V,bool}}) where {T,V,bool} = bool
+on_a_sphere(::Type{<:EdgeBase{B}}) where B = B
+integer_precision(::Type{<:EdgeBase{B,T}}) where {B,T} = T
+float_precision(::Type{<:EdgeBase{B,T,TF}}) where {B,T,TF} = TF
 
 Base.getproperty(edge::EdgeBase,s::Symbol) = _getproperty(edge,Val(s))
 _getproperty(edge::EdgeBase,::Val{s}) where s = getfield(edge,s)
@@ -52,9 +52,9 @@ _getproperty(edge::EdgeVelocityReconstruction,::Val{:nEdgesOnEdge}) = getfield(e
 _getproperty(edge::EdgeVelocityReconstruction,::Val{:edgesOnEdge}) = getfield(edge,:indices)
 _getproperty(edge::EdgeVelocityReconstruction,::Val{:weightsOnEdge}) = getfield(edge,:weights)
 
-mutable struct EdgeInfo{TEdgeBase,TI<:Integer,TF<:Real,TEdgeVelRecon<:EdgeVelocityReconstruction}
-    const base::TEdgeBase
-    const velRecon::TEdgeVelRecon
+mutable struct EdgeInfo{S,N,TI<:Integer, TF<:Real,Tz<:Number,TVec}
+    const base::EdgeBase{S,TI,TF,Tz,TVec}
+    const velRecon::EdgeVelocityReconstruction{N,TI,TF}
     longitude::Vector{TF}
     latitude::Vector{TF}
     """Mapping from local array index to global edge ID"""
@@ -68,20 +68,20 @@ mutable struct EdgeInfo{TEdgeBase,TI<:Integer,TF<:Real,TEdgeVelRecon<:EdgeVeloci
     """Indicator of whether an edge is an interior edge, a relation-zone edge, or a specified-zone edge"""
     bdyMask::Vector{TI}
     """Cartesian components of the vector normal to an edge and tangential to the surface of the sphere"""
-    normalVectors::Vec3DArray{TF,1}
+    normalVectors::VecArray{Vec{TVec,1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
     """Weights for cell-centered second derivative, normal to edge, for transport scheme"""
     derivTwo::Array{TF,3}
 
-    function EdgeInfo(edge::TEdgeBase,velRecon::TEdgeVelRecon) where {TEdgeBase<:EdgeBase, TEdgeVelRecon<:EdgeVelocityReconstruction}
-        return new{TEdgeBase,integer_precision(TEdgeBase),float_precision(TEdgeBase),TEdgeVelRecon}(edge,velRecon)
+    function EdgeInfo(edge::EdgeBase{S,TI,TF,Tz,TV},velRecon::EdgeVelocityReconstruction{N}) where {S,N,TI,TF,Tz,TV}
+        return new{S,N,TI,TF,Tz,TV}(edge,velRecon)
     end
 
 end
 
-integer_precision(::Type{<:EdgeInfo{TB,TI}}) where {TB,TI} = TI
-float_precision(::Type{<:EdgeInfo{TB,TI,TF}}) where {TB,TI,TF} = TF
-max_n_edges_vel_reconstruction(::Type{<:EdgeInfo{TB,TI,TF,TEV}}) where {TB,TI,TF,TEV} = max_n_edges_vel_reconstruction(TEV)
-on_a_sphere(::Type{<:EdgeInfo{TB}}) where TB = on_a_sphere(TB)
+on_a_sphere(::Type{<:EdgeInfo{B}}) where B = B
+max_n_edges_vel_reconstruction(::Type{<:EdgeInfo{B,N}}) where {B,N} = N
+integer_precision(::Type{<:EdgeInfo{B,N,T}}) where {B,N,T} = T
+float_precision(::Type{<:EdgeInfo{B,N,T,TF}}) where {B,N,T,TF} = TF
 
 Base.getproperty(edge::EdgeInfo,s::Symbol) = _getproperty(edge,Val(s))
 _getproperty(edge::EdgeInfo,::Val{s}) where s = getfield(edge,s)

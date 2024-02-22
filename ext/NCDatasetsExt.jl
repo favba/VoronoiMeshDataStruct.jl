@@ -35,9 +35,9 @@ function VoronoiMeshDataStruct.CellBase(ncfile::NCDatasets.NCDataset)
     nEdges = ncfile["nEdgesOnCell"][:]
     maxEdges = maximum(nEdges)
     indices = CellConnectivity(maxEdges,ncfile)
-    
-    onSphere, on_sphere = _on_a_sphere(ncfile)
 
+    onSphere, on_sphere = _on_a_sphere(ncfile)
+    
     position = on_sphere ? VecArray(x=ncfile["xCell"][:], y=ncfile["yCell"][:], z=ncfile["zCell"][:]) : VecArray(x=ncfile["xCell"][:], y=ncfile["yCell"][:])
 
     return CellBase(length(nEdges),indices,nEdges,position,onSphere)
@@ -147,11 +147,12 @@ end
 
 function VoronoiMeshDataStruct.EdgeBase(ncfile::NCDatasets.NCDataset)
     indices = EdgeConnectivity(ncfile)
-    position = VecArray(x=ncfile["xEdge"][:],
-                        y=ncfile["yEdge"][:],
-                        z=ncfile["zEdge"][:])
 
-    return EdgeBase(length(position.x),indices,position,_on_a_sphere(ncfile))
+    onSphere, on_sphere = _on_a_sphere(ncfile)
+
+    position = on_sphere ? VecArray(x=ncfile["xEdge"][:],y=ncfile["yEdge"][:],z=ncfile["zEdge"][:]) : VecArray(x=ncfile["xEdge"][:],y=ncfile["yEdge"][:])
+
+    return EdgeBase(length(position.x),indices,position,onSphere)
 end
 
 function VoronoiMeshDataStruct.EdgeVelocityReconstruction(ncfile::NCDatasets.NCDataset)
@@ -171,6 +172,8 @@ const edge_info_vectors = (longitude="lonEdge", latitude="latEdge",
 function VoronoiMeshDataStruct.EdgeInfo(ncfile::NCDatasets.NCDataset)
     edgeinfo = EdgeInfo(EdgeBase(ncfile),EdgeVelocityReconstruction(ncfile))
 
+    _, on_sphere = _on_a_sphere(ncfile)
+
     for (field_name, nc_name) in pairs(edge_info_vectors)
         if haskey(ncfile,nc_name)
             setproperty!(edgeinfo,field_name,ncfile[nc_name][:])
@@ -179,7 +182,7 @@ function VoronoiMeshDataStruct.EdgeInfo(ncfile::NCDatasets.NCDataset)
 
     if haskey(ncfile,"edgeNormalVectors")
         env = ncfile["edgeNormalVectors"]
-        edgeinfo.normalVectors = VecArray(x=env[1,:], y=env[2,:], z=env[3,:])
+        edgeinfo.normalVectors = on_sphere ? VecArray(x=env[1,:], y=env[2,:], z=env[3,:]) : VecArray(x=env[1,:], y=env[2,:])
     end
 
     if haskey(ncfile,"deriv_two")
