@@ -16,7 +16,7 @@ _getproperty(cell::CellConnectivity,::Val{:cellsOnCell}) = getfield(cell,:cells)
 max_n_edges(::Type{<:CellConnectivity{N}}) where N = N
 integer_precision(::Type{<:CellConnectivity{N,T}}) where {N,T} = T
 
-struct CellBase{MAX_N_EDGES,S,TI<:Integer,TF<:Real,Tz<:Number,TVec}
+struct CellBase{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number,TVec}
     n::Int
     """Cells connectivity data struct"""
     indices::CellConnectivity{MAX_N_EDGES,TI} 
@@ -27,8 +27,8 @@ struct CellBase{MAX_N_EDGES,S,TI<:Integer,TF<:Real,Tz<:Number,TVec}
     onSphere::Val{S}
 end
 
-max_n_edges(::Type{<:CellBase{N}}) where N = N
-on_a_sphere(::Type{<:CellBase{N,B}}) where {N,B} = B
+on_a_sphere(::Type{<:CellBase{B}}) where B = B
+max_n_edges(::Type{<:CellBase{B,N}}) where {N,B} = N
 integer_precision(::Type{<:CellBase{N,B,T}}) where {N,B,T} = T
 float_precision(::Type{<:CellBase{N,B,T,TF}}) where {N,B,T,TF} = TF
 
@@ -43,8 +43,8 @@ _getproperty(cell::CellBase,::Val{:xCell}) = getfield(cell,:position).x
 _getproperty(cell::CellBase,::Val{:yCell}) = getfield(cell,:position).y
 _getproperty(cell::CellBase,::Val{:zCell}) = getfield(cell,:position).z
 
-mutable struct CellInfo{MAX_N_EDGES,S,TI<:Integer,TF<:Real,Tz<:Number,TVec}
-    const base::CellBase{MAX_N_EDGES,S,TI,TF,Tz,TVec}
+mutable struct CellInfo{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number,TVec}
+    const base::CellBase{S,MAX_N_EDGES,TI,TF,Tz,TVec}
     longitude::Vector{TF}
     latitude::Vector{TF}
     """Mesh density function evaluated at cell (used when generating the cell)"""
@@ -75,8 +75,8 @@ mutable struct CellInfo{MAX_N_EDGES,S,TI<:Integer,TF<:Real,Tz<:Number,TVec}
     end
 end
 
-max_n_edges(::Type{<:CellInfo{N}}) where N = N
-on_a_sphere(::Type{<:CellInfo{N,B}}) where {N,B} = B
+on_a_sphere(::Type{<:CellInfo{B}}) where B = B
+max_n_edges(::Type{<:CellInfo{B,N}}) where {B,N} = N
 integer_precision(::Type{<:CellInfo{N,B,T}}) where {N,B,T} = T
 float_precision(::Type{<:CellInfo{N,B,T,TF}}) where {N,B,T,TF} = TF
 
