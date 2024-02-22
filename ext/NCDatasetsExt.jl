@@ -105,11 +105,12 @@ end
 
 function VoronoiMeshDataStruct.VertexBase(ncfile::NCDatasets.NCDataset)
     indices = VertexConnectivity(ncfile)
-    position = VecArray(x=ncfile["xVertex"][:],
-                        y=ncfile["yVertex"][:],
-                        z=ncfile["zVertex"][:])
 
-    return VertexBase(length(position.x),indices,position,_on_a_sphere(ncfile))
+    onSphere, on_sphere = _on_a_sphere(ncfile)
+
+    position = on_sphere ? VecArray(x=ncfile["xVertex"][:],y=ncfile["yVertex"][:],z=ncfile["zVertex"][:]) : VecArray(x=ncfile["xVertex"][:],y=ncfile["yVertex"][:])
+
+    return VertexBase(length(position.x),indices,position,onSphere)
 end
 
 const vertex_info_vectors = (longitude="lonVertex", latitude="latVertex",

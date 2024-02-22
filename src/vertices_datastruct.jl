@@ -12,18 +12,18 @@ _getproperty(vertex::VertexConnectivity,::Val{s}) where s = getfield(vertex,s)
 _getproperty(vertex::VertexConnectivity,::Val{:edgesOnVertex}) = getfield(vertex,:edges)
 _getproperty(vertex::VertexConnectivity,::Val{:cellsOnVertex}) = getfield(vertex,:cells)
 
-struct VertexBase{TI<:Integer, VAPos<:VecArray{<:Any,1},S}
+struct VertexBase{S,TI<:Integer, TF<:Real,Tz<:Number,TVec}
     n::Int
     """Vertices connectivity data struct"""
     indices::VertexConnectivity{TI}
     """Vertex's x,y,z coordinates"""
-    position::VAPos
+    position::VecArray{Vec{TVec,1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
     onSphere::Val{S}
 end
 
-integer_precision(::Type{<:VertexBase{T}}) where T = T
-float_precision(::Type{<:VertexBase{T,V}}) where {T,V} = TensorsLite._my_eltype(eltype(V))
-on_a_sphere(::Type{<:VertexBase{T,TV,bool}}) where {T,TV,bool} = bool
+on_a_sphere(::Type{<:VertexBase{B}}) where B = B
+integer_precision(::Type{<:VertexBase{B,T}}) where {B,T} = T
+float_precision(::Type{<:VertexBase{B,T,TF}}) where {B,T,TF} = TF
 
 Base.getproperty(vertex::VertexBase,s::Symbol) = _getproperty(vertex,Val(s))
 _getproperty(vertex::VertexBase,::Val{s}) where s = getfield(vertex,s)
@@ -34,8 +34,8 @@ _getproperty(vertex::VertexBase,::Val{:xVertex}) = getfield(vertex,:position).x
 _getproperty(vertex::VertexBase,::Val{:yVertex}) = getfield(vertex,:position).y
 _getproperty(vertex::VertexBase,::Val{:zVertex}) = getfield(vertex,:position).z
 
-mutable struct VertexInfo{TVertex<:VertexBase,TI,TF}
-    const base::TVertex
+mutable struct VertexInfo{S,TI,TF,Tz,TVec}
+    const base::VertexBase{S,TI,TF,Tz,TVec}
     longitude::Vector{TF}
     latitude::Vector{TF}
     """Mapping from local array index to global vertex ID"""
@@ -47,14 +47,14 @@ mutable struct VertexInfo{TVertex<:VertexBase,TI,TF}
     """Indicator of whether a vertex is an interior vertex, a relaxation-zone vertex, or a specified-zone vertex"""
     bdyMask::Vector{TI}
 
-    function VertexInfo(vertex::TVertex) where TVertex<:VertexBase
-        return new{TVertex,integer_precision(TVertex),float_precision(TVertex)}(vertex)
+    function VertexInfo(vertex::VertexBase{S,TI,TF,Tz,TVec}) where {S,TI,TF,Tz,TVec}
+        return new{S,TI,TF,Tz,TVec}(vertex)
     end
 end
 
-integer_precision(::Type{<:VertexInfo{TV,TI}}) where {TV,TI} = TI
-float_precision(::Type{<:VertexInfo{TV,TI,TF}}) where {TV,TI,TF} = TF
-on_a_sphere(::Type{<:VertexInfo{TV}}) where TV = on_a_sphere(TV)
+on_a_sphere(::Type{<:VertexInfo{B}}) where B = B
+integer_precision(::Type{<:VertexInfo{B,T}}) where {B,T} = T
+float_precision(::Type{<:VertexInfo{B,T,TF}}) where {B,T,TF} = TF
 
 Base.getproperty(vertex::VertexInfo,s::Symbol) = _getproperty(vertex,Val(s))
 
