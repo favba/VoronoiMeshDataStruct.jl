@@ -13,12 +13,12 @@ _getproperty(edge::EdgeConnectivity,::Val{:verticesOnEdge}) = getfield(edge,:ver
 _getproperty(edge::EdgeConnectivity,::Val{:cellsOnEdge}) = getfield(edge,:cells)
 
 
-struct EdgeBase{S,TI<:Integer, TF<:Real,Tz<:Number,TVec}
+struct EdgeBase{S,TI<:Integer, TF<:Real,Tz<:Number}
     n::Int
     """Edges connectivity data struct"""
     indices::EdgeConnectivity{TI}
     """Edge's x,y,z coordinates"""
-    position::VecArray{Vec{TVec,1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
+    position::VecArray{Vec{Union{TF,Tz},1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
     onSphere::Val{S}
 end
 
@@ -52,8 +52,8 @@ _getproperty(edge::EdgeVelocityReconstruction,::Val{:nEdgesOnEdge}) = getfield(e
 _getproperty(edge::EdgeVelocityReconstruction,::Val{:edgesOnEdge}) = getfield(edge,:indices)
 _getproperty(edge::EdgeVelocityReconstruction,::Val{:weightsOnEdge}) = getfield(edge,:weights)
 
-mutable struct EdgeInfo{S,N,TI<:Integer, TF<:Real,Tz<:Number,TVec}
-    const base::EdgeBase{S,TI,TF,Tz,TVec}
+mutable struct EdgeInfo{S,N,TI<:Integer, TF<:Real,Tz<:Number}
+    const base::EdgeBase{S,TI,TF,Tz}
     const velRecon::EdgeVelocityReconstruction{N,TI,TF}
     longitude::Vector{TF}
     latitude::Vector{TF}
@@ -68,12 +68,12 @@ mutable struct EdgeInfo{S,N,TI<:Integer, TF<:Real,Tz<:Number,TVec}
     """Indicator of whether an edge is an interior edge, a relation-zone edge, or a specified-zone edge"""
     bdyMask::Vector{TI}
     """Cartesian components of the vector normal to an edge and tangential to the surface of the sphere"""
-    normalVectors::VecArray{Vec{TVec,1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
+    normalVectors::VecArray{Vec{Union{TF,Tz},1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
     """Weights for cell-centered second derivative, normal to edge, for transport scheme"""
     derivTwo::Array{TF,3}
 
-    function EdgeInfo(edge::EdgeBase{S,TI,TF,Tz,TV},velRecon::EdgeVelocityReconstruction{N}) where {S,N,TI,TF,Tz,TV}
-        return new{S,N,TI,TF,Tz,TV}(edge,velRecon)
+    function EdgeInfo(edge::EdgeBase{S,TI,TF,Tz},velRecon::EdgeVelocityReconstruction{N}) where {S,N,TI,TF,Tz}
+        return new{S,N,TI,TF,Tz}(edge,velRecon)
     end
 
 end

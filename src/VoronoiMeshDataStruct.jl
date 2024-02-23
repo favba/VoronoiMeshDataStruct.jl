@@ -18,10 +18,10 @@ include("vertices_datastruct.jl")
 
 include("edges_datastruct.jl")
 
-struct VoronoiMesh{S,N,N2,TI,TF,Tz,TVec}
-    vertices::VertexInfo{S,TI,TF,Tz,TVec}
-    cells::CellInfo{S,N,TI,TF,Tz,TVec}
-    edges::EdgeInfo{S,N2,TI,TF,Tz,TVec}
+struct VoronoiMesh{S,N,N2,TI,TF,Tz}
+    vertices::VertexInfo{S,TI,TF,Tz}
+    cells::CellInfo{S,N,TI,TF,Tz}
+    edges::EdgeInfo{S,N2,TI,TF,Tz}
 end
 
 Base.getproperty(mesh::VoronoiMesh,s::Symbol) = _getproperty(mesh,Val(s))

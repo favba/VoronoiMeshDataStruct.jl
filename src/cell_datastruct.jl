@@ -16,14 +16,14 @@ _getproperty(cell::CellConnectivity,::Val{:cellsOnCell}) = getfield(cell,:cells)
 max_n_edges(::Type{<:CellConnectivity{N}}) where N = N
 integer_precision(::Type{<:CellConnectivity{N,T}}) where {N,T} = T
 
-struct CellBase{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number,TVec}
+struct CellBase{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number}
     n::Int
     """Cells connectivity data struct"""
     indices::CellConnectivity{MAX_N_EDGES,TI} 
     """Cell's number of edges (and vertices)"""
     nEdges::Vector{TI} 
     """Cell's x,y,z coordinates"""
-    position::VecArray{Vec{TVec,1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
+    position::VecArray{Vec{Union{TF,Tz},1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
     onSphere::Val{S}
 end
 
@@ -43,8 +43,8 @@ _getproperty(cell::CellBase,::Val{:xCell}) = getfield(cell,:position).x
 _getproperty(cell::CellBase,::Val{:yCell}) = getfield(cell,:position).y
 _getproperty(cell::CellBase,::Val{:zCell}) = getfield(cell,:position).z
 
-mutable struct CellInfo{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number,TVec}
-    const base::CellBase{S,MAX_N_EDGES,TI,TF,Tz,TVec}
+mutable struct CellInfo{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number}
+    const base::CellBase{S,MAX_N_EDGES,TI,TF,Tz}
     longitude::Vector{TF}
     latitude::Vector{TF}
     """Mesh density function evaluated at cell (used when generating the cell)"""
@@ -56,9 +56,9 @@ mutable struct CellInfo{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number,TVec}
     """Indicator of whether a cell is an interior cell, a relaxation-zone cell, or a specified-zone cell"""
     bdyMask::Vector{TI}
     """Cartesian components of the vector pointing in the local vertical direction for a cell"""
-    verticalUnitVectors::VecArray{Vec{TVec,1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
+    verticalUnitVectors::VecArray{Vec{Union{TF,Tz},1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
     """Tuple with pair of Vectors of Vec3D's structs defining the tangent plane at a cell"""
-    tangentPlane::NTuple{2,VecArray{Vec{TVec,1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}}
+    tangentPlane::NTuple{2,VecArray{Vec{Union{TF,Tz},1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}}
     """Coefficients for computing the off-diagonal components of the horizontal deformation"""
     defcA::Matrix{TF}
     """Coefficients for computing the diagonal components of the horizontal deformation"""
@@ -68,10 +68,10 @@ mutable struct CellInfo{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number,TVec}
     """Coefficients for computing the y (meridional) derivative of a cell-centered variable"""
     yGradientCoeff::Matrix{TF}
     """Coefficients to reconstruct velocity vectors at cell centers"""
-    coeffsReconstruct::VecArray{Vec{TVec,1,TF,TF,Tz},2,Array{TF,2},Array{TF,2},Array{Tz,2}}
+    coeffsReconstruct::VecArray{Vec{Union{TF,Tz},1,TF,TF,Tz},2,Array{TF,2},Array{TF,2},Array{Tz,2}}
 
-    function CellInfo(cell::CellBase{N,S,TI,TF,Tz,Tv}) where {N,S,TI,TF,Tz,Tv}
-        return new{N,S,TI,TF,Tz,Tv}(cell)
+    function CellInfo(cell::CellBase{N,S,TI,TF,Tz}) where {N,S,TI,TF,Tz}
+        return new{N,S,TI,TF,Tz}(cell)
     end
 end
 

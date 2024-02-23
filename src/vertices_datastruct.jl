@@ -12,12 +12,12 @@ _getproperty(vertex::VertexConnectivity,::Val{s}) where s = getfield(vertex,s)
 _getproperty(vertex::VertexConnectivity,::Val{:edgesOnVertex}) = getfield(vertex,:edges)
 _getproperty(vertex::VertexConnectivity,::Val{:cellsOnVertex}) = getfield(vertex,:cells)
 
-struct VertexBase{S,TI<:Integer, TF<:Real,Tz<:Number,TVec}
+struct VertexBase{S,TI<:Integer, TF<:Real,Tz<:Number}
     n::Int
     """Vertices connectivity data struct"""
     indices::VertexConnectivity{TI}
     """Vertex's x,y,z coordinates"""
-    position::VecArray{Vec{TVec,1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
+    position::VecArray{Vec{Union{TF,Tz},1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
     onSphere::Val{S}
 end
 
@@ -34,8 +34,8 @@ _getproperty(vertex::VertexBase,::Val{:xVertex}) = getfield(vertex,:position).x
 _getproperty(vertex::VertexBase,::Val{:yVertex}) = getfield(vertex,:position).y
 _getproperty(vertex::VertexBase,::Val{:zVertex}) = getfield(vertex,:position).z
 
-mutable struct VertexInfo{S,TI,TF,Tz,TVec}
-    const base::VertexBase{S,TI,TF,Tz,TVec}
+mutable struct VertexInfo{S,TI,TF,Tz}
+    const base::VertexBase{S,TI,TF,Tz}
     longitude::Vector{TF}
     latitude::Vector{TF}
     """Mapping from local array index to global vertex ID"""
@@ -47,8 +47,8 @@ mutable struct VertexInfo{S,TI,TF,Tz,TVec}
     """Indicator of whether a vertex is an interior vertex, a relaxation-zone vertex, or a specified-zone vertex"""
     bdyMask::Vector{TI}
 
-    function VertexInfo(vertex::VertexBase{S,TI,TF,Tz,TVec}) where {S,TI,TF,Tz,TVec}
-        return new{S,TI,TF,Tz,TVec}(vertex)
+    function VertexInfo(vertex::VertexBase{S,TI,TF,Tz}) where {S,TI,TF,Tz}
+        return new{S,TI,TF,Tz}(vertex)
     end
 end
 
