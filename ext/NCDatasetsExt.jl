@@ -193,7 +193,7 @@ function VoronoiMeshDataStruct.EdgeInfo(ncfile::NCDatasets.NCDataset)
 end
 
 function VoronoiMeshDataStruct.VoronoiMesh(ncfile::NCDatasets.NCDataset)
-    attributes = Dict{Symbol,Union{String,Float64}}()
+    attributes = Dict{Symbol,Union{String,Float64,Float32,Int64,Int32}}()
     for (key,val) in pairs(ncfile.attrib)
         attributes[Symbol(key)] = val
     end
