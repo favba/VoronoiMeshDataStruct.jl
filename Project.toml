@@ -7,10 +7,12 @@ version = "1.0.0-DEV"
 TensorsLite = "1a1b94bd-d244-45e0-965a-8acfeb92b70f"
 
 [weakdeps]
+GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
 NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
 
 [extensions]
-NCDatasetsExt = "NCDatasets" 
+GeometryBasicsExt = "GeometryBasics"
+NCDatasetsExt = "NCDatasets"
 
 [compat]
 julia = "1.9"
@@ -20,4 +22,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
 
 [targets]
-test = ["Test","NCDatasets"]
+test = ["Test", "NCDatasets"]

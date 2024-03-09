@@ -9,6 +9,7 @@ export EdgeConnectivity, EdgeBase, EdgeVelocityReconstruction, EdgeInfo
 export VoronoiMesh
 
 export on_a_sphere, max_n_edges, max_n_edges_vel_reconstruction, float_precision, integer_precision
+export create_cells_polygons, create_cells_polygons_periodic
 
 include("variable_length_indices.jl")
 
@@ -44,5 +45,8 @@ for s in (:nEdges,:verticesOnEdge,:cellsOnEdge,:xEdge,:yEdge,:zEdge, :nEdgesOnEd
           :latEdge, :indexToEdgeID, :dvEdge, :bdyMaskEdge, :dcEdge, :angleEdge, :edgeNormalVectors, :deriv_two)
     @eval _getproperty(mesh::VoronoiMesh,::Val{$(QuoteNode(s))}) = getproperty(getfield(mesh,:edges),$(QuoteNode(s)))
 end
+
+function create_cells_polygons end
+function create_cells_polygons_periodic end
 
 end
