@@ -22,6 +22,7 @@ struct VoronoiMesh{S,N,N2,TI,TF,Tz}
     vertices::VertexInfo{S,TI,TF,Tz}
     cells::CellInfo{S,N,TI,TF,Tz}
     edges::EdgeInfo{S,N2,TI,TF,Tz}
+    attributes::Dict{Symbol,Union{String,Float64}}
 end
 
 Base.getproperty(mesh::VoronoiMesh,s::Symbol) = _getproperty(mesh,Val(s))
