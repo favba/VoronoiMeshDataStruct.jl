@@ -9,7 +9,8 @@ export EdgeConnectivity, EdgeBase, EdgeVelocityReconstruction, EdgeInfo
 export VoronoiMesh
 
 export on_a_sphere, max_n_edges, max_n_edges_vel_reconstruction, float_precision, integer_precision
-export create_cells_polygons, create_cells_polygons_periodic
+export create_cells_polygons, create_cells_polygons_periodic, create_dual_triangles, create_dual_triangles_periodic, create_edge_quadrilaterals, create_edge_quadrilaterals_periodic
+
 
 include("variable_length_indices.jl")
 
@@ -48,5 +49,11 @@ end
 
 function create_cells_polygons end
 function create_cells_polygons_periodic end
+
+function create_dual_triangles end
+function create_dual_triangles_periodic end
+
+function create_edge_quadrilaterals end
+function create_edge_quadrilaterals_periodic end
 
 end
