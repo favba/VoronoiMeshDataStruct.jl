@@ -2,23 +2,12 @@ module GeometryBasicsExt
 
 using VoronoiMeshDataStruct
 using TensorsLite: Vec, norm
+using TensorsLiteGeometry
 using GeometryBasics: Polygon, Point2f, LineString, Line, TupleView
-
-@inline function closest_point(p::Vec,points::Tuple{Vararg{<:Vec,N}}) where N
-    @inline _,i = findmin(x->norm(x-p), points)
-    r = @inbounds points[i]
-    return r
-end
-
-@inline possible_positions(p::Vec,periods::Tuple{Vararg{<:Vec,N}}) where N = @inline map(+,ntuple(x->p,Val{N}()), periods)
 
 const PolType = Polygon{2, Float32, Point2f, LineString{2, Float32, Point2f, Base.ReinterpretArray{Line{2, Float32}, 1, Tuple{Point2f, Point2f}, TupleView{Tuple{Point2f, Point2f}, 2, 1, Vector{Point2f}}, false}}, Vector{LineString{2, Float32, Point2f, Base.ReinterpretArray{Line{2, Float32}, 1, Tuple{Point2f, Point2f}, TupleView{Tuple{Point2f, Point2f}, 2, 1, Vector{Point2f}}, false}}}}
 
 function VoronoiMeshDataStruct.create_cells_polygons_periodic(vert_pos,cell_pos,verticesOnCell,x_period,y_period)
-
-    periods = (Vec(),
-               Vec(x=x_period),Vec(x=-x_period),Vec(y=y_period),Vec(y=-y_period),
-               Vec(x=x_period,y=y_period), Vec(x=x_period,y=-y_period), Vec(x=-x_period,y=y_period),Vec(x=-x_period,y=-y_period))
 
     cell_polygons = Vector{PolType}(undef,length(cell_pos))
     local_vertices = Vector{Point2f}(undef,VoronoiMeshDataStruct.max_length(eltype(verticesOnCell)))
@@ -27,8 +16,7 @@ function VoronoiMeshDataStruct.create_cells_polygons_periodic(vert_pos,cell_pos,
         l = 0
         for i_v in verticesOnCell[i]
             l+=1
-            possible_vpos = possible_positions(vert_pos[i_v], periods) 
-            vpos = closest_point(cpos,possible_vpos)
+            vpos = closest(cpos,vert_pos[i_v],x_period,y_period)
             local_vertices[l] = Point2f(vpos.x,vpos.y)
         end
         cell_polygons[i] = Polygon(local_vertices[1:l])
@@ -46,9 +34,6 @@ function VoronoiMeshDataStruct.create_cells_polygons(mesh::VoronoiMesh)
 end
 
 function VoronoiMeshDataStruct.create_dual_triangles_periodic(vert_pos,cell_pos,cellsOnVertex,x_period,y_period)
-    periods = (Vec(),
-               Vec(x=x_period),Vec(x=-x_period),Vec(y=y_period),Vec(y=-y_period),
-               Vec(x=x_period,y=y_period), Vec(x=x_period,y=-y_period), Vec(x=-x_period,y=y_period),Vec(x=-x_period,y=-y_period))
 
     vert_triangles = Vector{PolType}(undef,length(vert_pos))
 
@@ -56,14 +41,11 @@ function VoronoiMeshDataStruct.create_dual_triangles_periodic(vert_pos,cell_pos,
         vpos = vert_pos[i]
         ic1,ic2,ic3 = cellsOnVertex[i]
 
-        possible_cpos = possible_positions(cell_pos[ic1], periods) 
-        cpos1 = closest_point(vpos,possible_cpos)
+        cpos1 = closest(vpos,cell_pos[ic1],x_period,y_period)
 
-        possible_cpos = possible_positions(cell_pos[ic2], periods) 
-        cpos2 = closest_point(vpos,possible_cpos)
+        cpos2 = closest(vpos,cell_pos[ic2],x_period,y_period)
 
-        possible_cpos = possible_positions(cell_pos[ic3], periods) 
-        cpos3 = closest_point(vpos,possible_cpos)
+        cpos3 = closest(vpos,cell_pos[ic3],x_period,y_period)
 
         vert_triangles[i] = Polygon([Point2f(cpos1.x,cpos1.y),Point2f(cpos2.x,cpos2.y),Point2f(cpos3.x,cpos3.y)])
     end
@@ -80,9 +62,6 @@ function VoronoiMeshDataStruct.create_dual_triangles(mesh::VoronoiMesh)
 end
 
 function VoronoiMeshDataStruct.create_edge_quadrilaterals_periodic(edge_pos,vert_pos,cell_pos,verticesOnEdge,cellsOnEdge,x_period,y_period)
-    periods = (Vec(),
-               Vec(x=x_period),Vec(x=-x_period),Vec(y=y_period),Vec(y=-y_period),
-               Vec(x=x_period,y=y_period), Vec(x=x_period,y=-y_period), Vec(x=-x_period,y=y_period),Vec(x=-x_period,y=-y_period))
 
     edge_quadrilaterals = Vector{PolType}(undef,length(edge_pos))
 
@@ -91,18 +70,13 @@ function VoronoiMeshDataStruct.create_edge_quadrilaterals_periodic(edge_pos,vert
         iv1,iv2 = verticesOnEdge[i]
         ic1,ic2 = cellsOnEdge[i]
 
-        possible_pos = possible_positions(cell_pos[ic1], periods) 
-        cpos1 = closest_point(epos,possible_pos)
+        cpos1 = closest(epos,cell_pos[ic1],x_period,y_period)
 
-        possible_pos = possible_positions(vert_pos[iv1], periods) 
-        vpos1 = closest_point(epos,possible_pos)
+        vpos1 = closest(epos,vert_pos[iv1],x_period,y_period)
 
-        possible_pos = possible_positions(cell_pos[ic2], periods) 
-        cpos2 = closest_point(epos,possible_pos)
+        cpos2 = closest(epos,cell_pos[ic2],x_period,y_period)
 
-        possible_pos = possible_positions(vert_pos[iv2], periods) 
-        vpos2 = closest_point(epos,possible_pos)
-
+        vpos2 = closest(epos,vert_pos[iv2],x_period,y_period)
 
         edge_quadrilaterals[i] = Polygon([Point2f(cpos1.x,cpos1.y),Point2f(vpos1.x,vpos1.y),Point2f(cpos2.x,cpos2.y),Point2f(vpos2.x,vpos2.y)])
     end
