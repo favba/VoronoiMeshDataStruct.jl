@@ -92,4 +92,58 @@ function VoronoiMeshDataStruct.create_edge_quadrilaterals(mesh::VoronoiMesh)
     end
 end
 
+function VoronoiMeshDataStruct.create_cell_linesegments_periodic(vert_pos,edge_pos,cell_pos,edgesOnCell,verticesOnEdge,x_period,y_period)
+    x = eltype(edge_pos.x)[]
+    y = eltype(edge_pos.y)[]
+    nEdges = length(verticesOnEdge)
+    sizehint!(x,2*nEdges)
+    sizehint!(y,2*nEdges)
+    x_periodic = eltype(edge_pos.x)[]
+    y_periodic = eltype(edge_pos.y)[]
+    sizehint!(x_periodic,nEdges÷2) 
+    sizehint!(y_periodic,nEdges÷2)
+
+    touched_edges_pos = Set{eltype(edge_pos)}()
+
+    @inbounds for i in eachindex(edgesOnCell)
+        c_pos = cell_pos[i]
+        edges_ind = edgesOnCell[i]
+
+        for j in edges_ind
+            e_pos=edge_pos[j]
+            closest_e_pos = closest(c_pos,e_pos,x_period,y_period)
+            if !(closest_e_pos in touched_edges_pos)
+                p = verticesOnEdge[j]
+
+                for k in p
+                    v_pos = vert_pos[k]
+                    closest_v_pos = closest(closest_e_pos,v_pos,x_period,y_period)
+                    if (closest_e_pos == e_pos)
+                        push!(x, closest_v_pos.x)
+                        push!(y, closest_v_pos.y)
+                    else
+                        push!(x_periodic, closest_v_pos.x)
+                        push!(y_periodic, closest_v_pos.y)
+                    end
+                end
+
+                push!(touched_edges_pos,closest_e_pos)
+            end
+
+        end
+
+    end
+
+    return ((x, y), (x_periodic, y_periodic))
+end
+
+function VoronoiMeshDataStruct.create_cell_linesegments(mesh::VoronoiMesh)
+    if mesh.attributes[:is_periodic]::String == "YES"
+        return create_cell_linesegments_periodic(mesh.vertices.position, mesh.edges.position, mesh.cells.position, mesh.cells.indices.edges, mesh.edges.indices.vertices, mesh.attributes[:x_period], mesh.attributes[:y_period]) 
+    else
+        error("Not yet implemented for non-periodic meshes")
+    end
+end
+
+
 end

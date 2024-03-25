@@ -10,6 +10,7 @@ export VoronoiMesh
 
 export on_a_sphere, max_n_edges, max_n_edges_vel_reconstruction, float_precision, integer_precision
 export create_cells_polygons, create_cells_polygons_periodic, create_dual_triangles, create_dual_triangles_periodic, create_edge_quadrilaterals, create_edge_quadrilaterals_periodic
+export create_cell_linesegments, create_cell_linesegments_periodic
 
 
 include("variable_length_indices.jl")
@@ -56,4 +57,6 @@ function create_dual_triangles_periodic end
 function create_edge_quadrilaterals end
 function create_edge_quadrilaterals_periodic end
 
+function create_cell_linesegments end
+function create_cell_linesegments_periodic end
 end
