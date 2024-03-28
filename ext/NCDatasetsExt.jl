@@ -194,7 +194,7 @@ end
 
 function VoronoiMeshDataStruct.VoronoiMesh(ncfile::NCDatasets.NCDataset)
     attributes = Dict{Symbol,Union{String,Float64,Float32,Int64,Int32}}()
-    for (key,val) in pairs(ncfile.attrib)
+    for (key,val) in ncfile.attrib
         attributes[Symbol(key)] = val
     end
     return VoronoiMesh(VertexInfo(ncfile),CellInfo(ncfile),EdgeInfo(ncfile),attributes) 
