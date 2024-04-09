@@ -3,7 +3,7 @@ module NCDatasetsExt
 using VoronoiMeshDataStruct, NCDatasets, TensorsLite
 
 function _on_a_sphere(ncfile::NCDatasets.NCDataset)
-    oas = lowercase(ncfile.attrib["on_a_sphere"])
+    oas = lowercase(strip(ncfile.attrib["on_a_sphere"]))
     if oas in ("yes","y")
         return (Val(true), true)
     else
@@ -195,6 +195,7 @@ end
 function VoronoiMeshDataStruct.VoronoiMesh(ncfile::NCDatasets.NCDataset)
     attributes = Dict{Symbol,Union{String,Float64,Float32,Int64,Int32}}()
     for (key,val) in ncfile.attrib
+        val isa String && (val = String(strip(val)))
         attributes[Symbol(key)] = val
     end
     return VoronoiMesh(VertexInfo(ncfile),CellInfo(ncfile),EdgeInfo(ncfile),attributes) 
