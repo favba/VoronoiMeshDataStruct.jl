@@ -1,6 +1,6 @@
 module VoronoiMeshDataStruct
 
-using TensorsLite
+using TensorsLite, TensorsLiteGeometry
 
 export VariableLengthIndices
 export CellConnectivity, CellBase, CellInfo
@@ -9,6 +9,9 @@ export EdgeConnectivity, EdgeBase, EdgeVelocityReconstruction, EdgeInfo
 export VoronoiMesh
 
 export on_a_sphere, max_n_edges, max_n_edges_vel_reconstruction, float_precision, integer_precision
+
+export compute_edge_normals, compute_edge_normals!
+
 export create_cells_polygons, create_cells_polygons_periodic, create_dual_triangles, create_dual_triangles_periodic, create_edge_quadrilaterals, create_edge_quadrilaterals_periodic
 export create_cell_linesegments, create_cell_linesegments_periodic
 
@@ -47,6 +50,8 @@ for s in (:nEdges,:verticesOnEdge,:cellsOnEdge,:xEdge,:yEdge,:zEdge, :nEdgesOnEd
           :latEdge, :indexToEdgeID, :dvEdge, :bdyMaskEdge, :dcEdge, :angleEdge, :edgeNormalVectors, :deriv_two)
     @eval _getproperty(mesh::VoronoiMesh,::Val{$(QuoteNode(s))}) = getproperty(getfield(mesh,:edges),$(QuoteNode(s)))
 end
+
+include("fields_creation.jl")
 
 function create_cells_polygons end
 function create_cells_polygons_periodic end
