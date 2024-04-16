@@ -23,7 +23,7 @@ struct CellBase{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number}
     """Cell's number of edges (and vertices)"""
     nEdges::Vector{TI} 
     """Cell's x,y,z coordinates"""
-    position::VecArray{Vec{Union{TF,Tz},1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
+    position::VecMaybe2DxyArray{TF,Tz,1}
     onSphere::Val{S}
 end
 
@@ -56,9 +56,9 @@ mutable struct CellInfo{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number}
     """Indicator of whether a cell is an interior cell, a relaxation-zone cell, or a specified-zone cell"""
     bdyMask::Vector{TI}
     """Cartesian components of the vector pointing in the local vertical direction for a cell"""
-    verticalUnitVectors::VecArray{Vec{Union{TF,Tz},1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
+    verticalUnitVectors::VecMaybe2DxyArray{Tz,TF,1} # Actually, maybe 1Dz
     """Tuple with pair of Vectors of Vec3D's structs defining the tangent plane at a cell"""
-    tangentPlane::NTuple{2,VecArray{Vec{Union{TF,Tz},1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}}
+    tangentPlane::NTuple{2,VecMaybe2DxyArray{TF,Tz,1}}
     """Coefficients for computing the off-diagonal components of the horizontal deformation"""
     defcA::Matrix{TF}
     """Coefficients for computing the diagonal components of the horizontal deformation"""
@@ -68,7 +68,7 @@ mutable struct CellInfo{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number}
     """Coefficients for computing the y (meridional) derivative of a cell-centered variable"""
     yGradientCoeff::Matrix{TF}
     """Coefficients to reconstruct velocity vectors at cell centers"""
-    coeffsReconstruct::VecArray{Vec{Union{TF,Tz},1,TF,TF,Tz},2,Array{TF,2},Array{TF,2},Array{Tz,2}}
+    coeffsReconstruct::VecMaybe2DxyArray{TF,Tz,2}
 
     function CellInfo(cell::CellBase{N,S,TI,TF,Tz}) where {N,S,TI,TF,Tz}
         return new{N,S,TI,TF,Tz}(cell)

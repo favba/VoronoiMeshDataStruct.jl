@@ -18,7 +18,7 @@ struct EdgeBase{S,TI<:Integer, TF<:Real,Tz<:Number}
     """Edges connectivity data struct"""
     indices::EdgeConnectivity{TI}
     """Edge's x,y,z coordinates"""
-    position::VecArray{Vec{Union{TF,Tz},1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
+    position::VecMaybe2DxyArray{TF,Tz,1}
     onSphere::Val{S}
 end
 
@@ -68,7 +68,7 @@ mutable struct EdgeInfo{S,N,TI<:Integer, TF<:Real,Tz<:Number}
     """Indicator of whether an edge is an interior edge, a relation-zone edge, or a specified-zone edge"""
     bdyMask::Vector{TI}
     """Cartesian components of the vector normal to an edge and tangential to the surface of the sphere"""
-    normalVectors::VecArray{Vec{Union{TF,Tz},1,TF,TF,Tz},1,Array{TF,1},Array{TF,1},Array{Tz,1}}
+    normalVectors::VecMaybe2DxyArray{TF,Tz,1}
     """Weights for cell-centered second derivative, normal to edge, for transport scheme"""
     derivTwo::Array{TF,3}
 
