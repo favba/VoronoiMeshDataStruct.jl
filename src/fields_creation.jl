@@ -66,6 +66,7 @@ function compute_kite_areas_periodic!(output,cpos,vpos,cellsOnVertex,xp,yp)
         c2_pos = closest(v_pos,cpos[c2],xp,yp)
         c3_pos = closest(v_pos,cpos[c3],xp,yp)
         
+        #Those should be the edges positions
         c12_pos = 0.5*(c1_pos + c2_pos)
         c23_pos = 0.5*(c2_pos + c3_pos)
         c31_pos = 0.5*(c3_pos + c1_pos)
@@ -89,3 +90,24 @@ function compute_kite_areas!(output::AbstractVector,mesh::VoronoiMesh{false})
     length(output) == mesh.vertices.n || throw(DomainError("Output array doesn't have correct length.\nArray length: "*length(output)*".\nNumber of vertices:"*mesh.vertices.n))
     return compute_kite_areas_periodic!(output,mesh.cells.position,mesh.vertices.position,mesh.vertices.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 end
+
+function compute_area_cells_periodic!(output,vpos,verticesOnCell,xp::Number,yp::Number)
+    @inbounds for c in eachindex(verticesOnCell)
+        output[c] = area(vpos,verticesOnCell[c],xp,yp)
+    end
+    return output
+end
+
+function compute_area_cells_periodic(vpos,verticesOnCell,xp::Number,yp::Number)
+    output = Vector{nonzero_eltype(eltype(vpos))}(undef,length(verticesOnCell))
+    return compute_area_cells_periodic!(output,vpos,verticesOnCell,xp,yp)
+end
+
+compute_area_cells(mesh::VoronoiMesh{false}) = compute_area_cells_periodic(mesh.vertices.position,mesh.cells.indices.vertices,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+
+function compute_area_cells!(output::AbstractVector,mesh::VoronoiMesh{false})
+    length(output) == mesh.cells.n || throw(DomainError("Output array doesn't have correct length.\nArray length: "*length(output)*".\nNumber of cells:"*mesh.cells.n))
+    return compute_area_cells_periodic!(output,mesh.vertices.position,mesh.cells.indices.vertices,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+end
+
+compute_area_cells!(mesh::VoronoiMesh{false}) = compute_area_cells!(mesh.cells.area,mesh)

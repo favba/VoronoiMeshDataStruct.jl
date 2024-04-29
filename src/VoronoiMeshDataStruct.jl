@@ -11,7 +11,7 @@ export VoronoiMesh
 export on_a_sphere, max_n_edges, max_n_edges_vel_reconstruction, float_precision, integer_precision
 
 export compute_edge_normals, compute_edge_normals!
-export compute_area_triangles, compute_area_triangles!, compute_kite_areas, compute_kite_areas!
+export compute_area_triangles, compute_area_triangles!, compute_kite_areas, compute_kite_areas!, compute_area_cells, compute_area_cells!
 
 export create_cells_polygons, create_cells_polygons_periodic, create_dual_triangles, create_dual_triangles_periodic, create_edge_quadrilaterals, create_edge_quadrilaterals_periodic
 export create_cell_linesegments, create_cell_linesegments_periodic
