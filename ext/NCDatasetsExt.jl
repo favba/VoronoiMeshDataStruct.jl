@@ -11,36 +11,46 @@ function _on_a_sphere(ncfile::NCDatasets.NCDataset)
     end
 end
 
-function VoronoiMeshDataStruct.CellConnectivity(ncfile::NCDatasets.NCDataset)
-    nEdgesOnCell = ncfile["nEdgesOnCell"][:]
-    maxEdges = maximum(nEdgesOnCell)
-    
-    return CellConnectivity(maxEdges,ncfile)
+function construct_indicesOnCell(n::Val{maxEdges},indicesOnCellArray::AbstractMatrix{TI}) where {maxEdges,TI}
+    indicesOnCell = Vector{VariableLengthIndices{maxEdges,TI}}(undef,size(indicesOnCellArray,2))
+    @inbounds for k in axes(indicesOnCellArray,2)
+        indicesOnCell[k] = VariableLengthIndices{maxEdges}(ntuple(i->(@inbounds indicesOnCellArray[i,k]),n))
+    end
+    return indicesOnCell
 end
 
-function VoronoiMeshDataStruct.CellConnectivity(maxEdges::Integer,ncfile::NCDatasets.NCDataset)
+function VoronoiMeshDataStruct.CellConnectivity(me::Val{maxEdges},ncfile::NCDatasets.NCDataset) where {maxEdges}
     verticesOnCellArray = ncfile["verticesOnCell"]
-    verticesOnCell = VariableLengthIndices{maxEdges}.((verticesOnCellArray[1:maxEdges,k]...,) for k in axes(verticesOnCellArray,2))
+    verticesOnCell = construct_indicesOnCell(me,verticesOnCellArray)
 
     edgesOnCellArray = ncfile["edgesOnCell"]
-    edgesOnCell = VariableLengthIndices{maxEdges}.((edgesOnCellArray[1:maxEdges,k]...,) for k in axes(edgesOnCellArray,2))
+    edgesOnCell = construct_indicesOnCell(me,edgesOnCellArray)
 
     cellsOnCellArray = ncfile["cellsOnCell"]
-    cellsOnCell = VariableLengthIndices{maxEdges}.((cellsOnCellArray[1:maxEdges,k]...,) for k in axes(cellsOnCellArray,2))
+    cellsOnCell = construct_indicesOnCell(me,cellsOnCellArray)
 
     return CellConnectivity(verticesOnCell,edgesOnCell,cellsOnCell)
 end
 
-function VoronoiMeshDataStruct.CellBase(ncfile::NCDatasets.NCDataset)
-    nEdges = ncfile["nEdgesOnCell"][:]
-    maxEdges = maximum(nEdges)
-    indices = CellConnectivity(maxEdges,ncfile)
-
-    onSphere, on_sphere = _on_a_sphere(ncfile)
+function VoronoiMeshDataStruct.CellConnectivity(ncfile::NCDatasets.NCDataset)
+    nEdgesOnCell = ncfile["nEdgesOnCell"][:]
+    maxEdges = Int(maximum(nEdgesOnCell))
     
+    return CellConnectivity(Val(maxEdges),ncfile)
+end
+
+function VoronoiMeshDataStruct.CellBase(onSphere::Val{on_sphere},mE::Val{maxEdges},nEdges,ncfile::NCDatasets.NCDataset) where {on_sphere,maxEdges}
+    indices = CellConnectivity(mE,ncfile)
     position = on_sphere ? VecArray(x=ncfile["xCell"][:], y=ncfile["yCell"][:], z=ncfile["zCell"][:]) : VecArray(x=ncfile["xCell"][:], y=ncfile["yCell"][:])
 
     return CellBase(length(nEdges),indices,nEdges,position,onSphere)
+end
+
+function VoronoiMeshDataStruct.CellBase(ncfile::NCDatasets.NCDataset)
+    nEdges = ncfile["nEdgesOnCell"][:]
+    maxEdges = Int(maximum(nEdges))
+    onSphere, on_sphere = _on_a_sphere(ncfile)
+    return CellBase(onSphere,Val(maxEdges),nEdges,ncfile)
 end
 
 const cell_info_vectors = (longitude="lonCell", latitude="latCell",
@@ -51,10 +61,12 @@ const cell_info_matrices_max_edges = (defcA="defc_a", defcB="defc_b",
                                       xGradientCoeff="cell_gradient_coef_x", yGradientCoeff="cell_gradient_coef_y")
 
 function VoronoiMeshDataStruct.CellInfo(ncfile::NCDatasets.NCDataset)
-
-    _, on_sphere = _on_a_sphere(ncfile)
     cells = CellBase(ncfile)
-    max_nedges = VoronoiMeshDataStruct.max_n_edges(typeof(cells))
+    return CellInfo(cells,ncfile)
+end
+
+function VoronoiMeshDataStruct.CellInfo(cells::CellBase{on_sphere,max_nedges},ncfile::NCDatasets.NCDataset) where {on_sphere,max_nedges}
+
     cellinfo = CellInfo(cells)
 
     for (field_name, nc_name) in pairs(cell_info_vectors)
