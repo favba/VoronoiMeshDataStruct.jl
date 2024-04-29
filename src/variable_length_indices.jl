@@ -10,7 +10,7 @@ struct VariableLengthIndices{MAX_N,T<:Integer} <: AbstractVector{T}
             val = data[i]
         end
         if i != N
-            all(x->(x==zero(T)), data[i:N]) || throw(DomainError(data,"Invalid indices tuple"))
+            all(x->(x==zero(T)), Iterators.drop(data,i)) || throw(DomainError(data,"Invalid indices tuple"))
         end
         return new{N,T}(data)
     end
