@@ -6,6 +6,7 @@ version = "1.0.0-DEV"
 [deps]
 TensorsLite = "1a1b94bd-d244-45e0-965a-8acfeb92b70f"
 TensorsLiteGeometry = "f9cc0174-84f8-4243-a119-6cf6c33db921"
+Zeros = "bd1ec220-6eb4-527a-9b49-e79c3db6233b"
 
 [weakdeps]
 GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
