@@ -94,7 +94,7 @@ function VoronoiMeshDataStruct.CellInfo(cells::CellBase{on_sphere,max_nedges},nc
 
     if haskey(ncfile,"localVerticalUnitVectors")
         lvuva = ncfile["localVerticalUnitVectors"]
-        cellinfo.verticalUnitVectors = on_sphere ? VecArray(x=lvuva[1,:], y=lvuva[2,:], z=lvuva[3,:]) : VecArray(x=lvuva[1,:], y=lvuva[2,:])
+        cellinfo.verticalUnitVectors = on_sphere ? VecArray(x=lvuva[1,:], y=lvuva[2,:], z=lvuva[3,:]) : VecArray(z=lvuva[3,:])
     end
 
     if haskey(ncfile,"cellTangentPlane")
