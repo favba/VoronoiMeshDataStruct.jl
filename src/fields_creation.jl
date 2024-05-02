@@ -211,3 +211,97 @@ function compute_angleEdge!(mesh::VoronoiMesh)
         return mesh.edges.angle
     end
 end
+
+function select_shared_vertex(next_vs, previous_vs)
+    v = zero(eltype(next_vs))
+    nv1,nv2 = next_vs
+    pv1,pv2 = previous_vs
+
+    if ((nv1 == pv1) || (nv1 == pv2))
+        v = nv1
+    elseif ((nv2 == pv1) || (nv2 == pv2))
+        v = nv2
+    else
+        error("No common vertex found")
+    end
+    return v
+end
+
+function select_kite_area(kiteAreaOnVertex,cellsOnVertex,v,c)
+    areas = kiteAreaOnVertex[v]
+    cells = cellsOnVertex[v]
+    if cells[1] == c
+        return areas[1]
+    elseif cells[2] == c
+        return areas[2]
+    elseif cells[3] == c
+        return areas[3]
+    else
+        error("Vertex $v doesn't belong to cell $c")
+    end
+end
+
+function sign_edge((c1,c2),c)
+    if c == c1
+        return 1
+    elseif c == c2
+        return -1
+    else
+        error("Edge doesn't belong to cell $c")
+    end
+end
+
+function compute_weightsOnEdge_trisk!(weightsOnEdge,verticesOnEdge,cellsOnEdge,edgesOnEdge,dcEdge,dvEdge,kiteAreasOnVertex,cellsOnVertex,nEdgesOnCell,areaCell)
+    for e in eachindex(edgesOnEdge)
+        c1,c2 = cellsOnEdge[e]
+        inds_e = edgesOnEdge[e]
+        inv_de = inv(dcEdge[e])
+
+        nEdges_c1 = nEdgesOnCell[c1]
+        inv_a_c1 = inv(areaCell[c1])
+        previous_vs = verticesOnEdge[e]
+        R = zero(eltype(weightsOnEdge))
+        for i in 1:(nEdges_c1-1)
+            next_e = inds_e[i]
+            next_vs = verticesOnEdge[next_e]
+            v = select_shared_vertex(next_vs, previous_vs)
+            Avi = select_kite_area(kiteAreasOnVertex,cellsOnVertex,v,c1)
+            R += inv_a_c1*Avi
+            weightsOnEdge[i,e] = sign_edge(cellsOnEdge[next_e],c1)*inv_de*dvEdge[next_e]*(0.5 - R)
+            previous_vs = next_vs
+        end
+
+        nEdges_c2 = nEdgesOnCell[c2]
+        inv_a_c2 = inv(areaCell[c2])
+        R = zero(eltype(weightsOnEdge))
+        for i in nEdges_c1:(nEdges_c1 + nEdges_c2 - 2)
+            next_e = inds_e[i]
+            next_vs = verticesOnEdge[next_e]
+            v = select_shared_vertex(next_vs, previous_vs)
+            Avi = select_kite_area(kiteAreasOnVertex,cellsOnVertex,v,c2)
+            R += inv_a_c2*Avi
+            weightsOnEdge[i,e] = (-sign_edge(cellsOnEdge[next_e],c2))*inv_de*dvEdge[next_e]*(0.5 - R)
+            previous_vs = next_vs
+        end
+    end
+    return weightsOnEdge
+end
+
+function compute_weightsOnEdge_trisk(verticesOnEdge,cellsOnEdge,edgesOnEdge,dcEdge,dvEdge,kiteAreasOnVertex,cellsOnVertex,nEdgesOnCell,areaCell)
+    T = eltype(eltype(kiteAreasOnVertex))
+    nedges_max = max_length(eltype(edgesOnEdge))
+    nedges = length(verticesOnEdge)
+    weightsOnEdge = zeros(T,nedges_max,nedges)
+    return compute_weightsOnEdge_trisk!(weightsOnEdge,verticesOnEdge,cellsOnEdge,edgesOnEdge,dcEdge,dvEdge,kiteAreasOnVertex,cellsOnVertex,nEdgesOnCell,areaCell)
+end
+
+function compute_weightsOnEdge_trisk!(weightsOnEdge,mesh::VoronoiMesh)
+    nedges_max = max_length(eltype(mesh.edgesOnEdge))
+    nedges = length(mesh.verticesOnEdge)
+    size(weightsOnEdge) == (nedges_max,nedges) || throw(DimensionMismatch())
+    return compute_weightsOnEdge_trisk!(weightsOnEdge,mesh.verticesOnEdge,mesh.cellsOnEdge,mesh.edgesOnEdge,mesh.dcEdge,mesh.dvEdge,mesh.kiteAreasOnVertex,mesh.cellsOnVertex,mesh.nEdgesOnCell,mesh.areaCell)
+end
+
+function compute_weightsOnEdge_trisk(mesh::VoronoiMesh)
+    return compute_weightsOnEdge_trisk(mesh.verticesOnEdge,mesh.cellsOnEdge,mesh.edgesOnEdge,mesh.dcEdge,mesh.dvEdge,mesh.kiteAreasOnVertex,mesh.cellsOnVertex,mesh.nEdgesOnCell,mesh.areaCell)
+end

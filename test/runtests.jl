@@ -31,7 +31,7 @@ using Test
     @test_throws DomainError VoronoiMeshDataStruct.VariableLengthIndices{3}(a)
 end
 
-@testset "Fields Creation" begin
+@testset "Fields Creation Planar Mesh" begin
     mesh = NCDataset("mesh.nc") do f; VoronoiMesh(f) ;end
     @test all(x->(x[1]≈x[2]),  zip(compute_area_triangles(mesh),mesh.vertices.area))
     @test all(x->(x[1]≈x[2]),  zip(compute_area_cells(mesh),mesh.cells.area))
@@ -39,4 +39,5 @@ end
     @test all(x->(x[1]≈x[2]),  zip(compute_dcEdge(mesh),mesh.edges.dc))
     @test all(x->(x[1]≈x[2]),  zip(compute_dvEdge(mesh),mesh.edges.dv))
     @test all(x->(x[1]≈x[2]),  zip(compute_angleEdge(mesh),mesh.edges.angle))
+    @test all(x->isapprox(x[1],x[2],atol=1e-7),  zip(compute_weightsOnEdge_trisk(mesh),mesh.weightsOnEdge))
 end

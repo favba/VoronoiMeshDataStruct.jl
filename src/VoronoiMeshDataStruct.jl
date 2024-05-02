@@ -21,6 +21,7 @@ export compute_dvEdge, compute_dvEdge!
 export compute_dvEdge_periodic, compute_dvEdge_periodic!
 export compute_angleEdge, compute_angleEdge!
 export compute_angleEdge_periodic, compute_angleEdge_periodic!
+export compute_weightsOnEdge_trisk, compute_weightsOnEdge_trisk!
 
 export create_cells_polygons, create_cells_polygons_periodic, create_dual_triangles, create_dual_triangles_periodic, create_edge_quadrilaterals, create_edge_quadrilaterals_periodic
 export create_cell_linesegments, create_cell_linesegments_periodic
