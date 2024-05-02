@@ -1,5 +1,4 @@
-function compute_edge_normals_periodic(cpos::Vec2DxyArray,cellsOnEdge,xp::Number,yp::Number)
-    n = similar(cpos,size(cellsOnEdge))
+function compute_edge_normals_periodic!(n::Vec2DxyArray,cpos::Vec2DxyArray,cellsOnEdge,xp::Number,yp::Number)
 
     @inbounds for i in eachindex(cellsOnEdge)
         ic1,ic2 = cellsOnEdge[i]
@@ -11,7 +10,10 @@ function compute_edge_normals_periodic(cpos::Vec2DxyArray,cellsOnEdge,xp::Number
     return n
 end
 
-function compute_edge_normals_on_sphere end
+function compute_edge_normals_periodic(cpos::Vec2DxyArray,cellsOnEdge,xp::Number,yp::Number)
+    n = similar(cpos,size(cellsOnEdge))
+    return compute_edge_normals_periodic!(n,cpos,cellsOnEdge,xp,yp)
+end
 
 #Since the edges are always equidistant to both cell positions, the vector connecting them will be parallel to the arc tangent at the edge, right??
 function compute_edge_normals_on_sphere(cpos,cellsOnEdge)
@@ -27,6 +29,11 @@ end
 
 compute_edge_normals(mesh::VoronoiMesh{true}) = compute_edge_normals_on_sphere(mesh.cells.position,mesh.edges.indices.cells)
 compute_edge_normals(mesh::VoronoiMesh{false}) = compute_edge_normals_periodic(mesh.cells.position,mesh.edges.indices.cells,Float64(mesh.attributes[:x_period]),Float64(mesh.attributes[:y_period]))
+
+function compute_edge_normals!(output,mesh::VoronoiMesh{false})
+    length(output) == mesh.edges.n || throw(DomainError("Output array doesn't have correct length.\nArray length: "*length(output)*".\nNumber of edges:"*mesh.edges.n))
+    compute_edge_normals_periodic!(output,mesh.cells.position,mesh.edges.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+end
 
 function compute_edge_normals!(mesh::VoronoiMesh)
     mesh.edges.normalVectors = compute_edge_normals(mesh)
@@ -111,3 +118,96 @@ function compute_area_cells!(output::AbstractVector,mesh::VoronoiMesh{false})
 end
 
 compute_area_cells!(mesh::VoronoiMesh{false}) = compute_area_cells!(mesh.cells.area,mesh)
+
+function compute_dcEdge_periodic!(output,cpos,cellsOnEdge,xp::Number,yp::Number)
+    @inbounds for e in eachindex(cellsOnEdge)
+        c1,c2 = cellsOnEdge[e]
+        c1pos = cpos[c1]
+        c2pos = closest(c1pos,cpos[c2],xp,yp)
+        output[e] = norm(c2pos-c1pos)
+    end
+    return output
+end
+
+function compute_dcEdge!(output,mesh::VoronoiMesh{false}) 
+    length(output) == mesh.edges.n || throw(DomainError("Output array doesn't have correct length.\nArray length: "*length(output)*".\nNumber of edges:"*mesh.edges.n))
+    return compute_dcEdge_periodic!(output,mesh.cells.position,mesh.edges.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+end
+
+function compute_dcEdge_periodic(cpos,cellsOnEdge,xp::Number,yp::Number)
+    output = Vector{nonzero_eltype(eltype(cpos))}(undef,length(cellsOnEdge))
+    return compute_dcEdge_periodic!(output,cpos,cellsOnEdge,xp,yp)
+end
+
+compute_dcEdge(mesh::VoronoiMesh{false}) = compute_dcEdge_periodic(mesh.cells.position,mesh.edges.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+
+function compute_dcEdge!(mesh::VoronoiMesh) 
+    if isdefined(mesh.edges,:dc)
+        return compute_dcEdge!(mesh.edges.dc,mesh)
+    else
+        mesh.edges.dc = compute_dcEdge(mesh)
+        return mesh.edges.dc
+    end
+end
+
+function compute_dvEdge_periodic!(output,vpos,verticesOnEdge,xp::Number,yp::Number)
+    @inbounds for e in eachindex(verticesOnEdge)
+        v1,v2 = verticesOnEdge[e]
+        v1pos = vpos[v1]
+        v2pos = closest(v1pos,vpos[v2],xp,yp)
+        output[e] = norm(v2pos-v1pos)
+    end
+    return output
+end
+
+function compute_dvEdge!(output,mesh::VoronoiMesh{false}) 
+    length(output) == mesh.edges.n || throw(DomainError("Output array doesn't have correct length.\nArray length: "*length(output)*".\nNumber of edges:"*mesh.edges.n))
+    return compute_dvEdge_periodic!(output,mesh.vertices.position,mesh.edges.indices.vertices,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+end
+
+function compute_dvEdge_periodic(vpos,verticesOnEdge,xp::Number,yp::Number)
+    output = Vector{nonzero_eltype(eltype(vpos))}(undef,length(verticesOnEdge))
+    return compute_dvEdge_periodic!(output,vpos,verticesOnEdge,xp,yp)
+end
+
+compute_dvEdge(mesh::VoronoiMesh{false}) = compute_dvEdge_periodic(mesh.vertices.position,mesh.edges.indices.vertices,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+
+function compute_dvEdge!(mesh::VoronoiMesh) 
+    if isdefined(mesh.edges,:dv)
+        return compute_dvEdge!(mesh.edges.dv,mesh)
+    else
+        mesh.edges.dv = compute_dvEdge(mesh)
+        return mesh.edges.dv
+    end
+end
+
+function compute_angleEdge_periodic!(output,cpos,cellsOnEdge,xp::Number,yp::Number)
+  @inbounds for i in eachindex(cellsOnEdge)
+        ic1,ic2 = cellsOnEdge[i]
+        cpos2 = cpos[ic2]
+        cpos1 = closest(cpos2,cpos[ic1],xp,yp)
+        output[i] = acos(normalize(cpos2 - cpos1) ⋅ 𝐢)
+    end
+    return output
+end
+
+function compute_angleEdge!(output,mesh::VoronoiMesh{false}) 
+    length(output) == mesh.edges.n || throw(DomainError("Output array doesn't have correct length.\nArray length: "*length(output)*".\nNumber of edges:"*mesh.edges.n))
+    return compute_angleEdge_periodic!(output,mesh.cells.position,mesh.edges.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+end
+
+function compute_angleEdge_periodic(cpos,cellsOnEdge,xp::Number,yp::Number)
+    output = Vector{nonzero_eltype(eltype(cpos))}(undef,length(cellsOnEdge))
+    return compute_angleEdge_periodic!(output,cpos,cellsOnEdge,xp,yp)
+end
+
+compute_angleEdge(mesh::VoronoiMesh{false}) = compute_angleEdge_periodic(mesh.cells.position,mesh.edges.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+
+function compute_angleEdge!(mesh::VoronoiMesh) 
+    if isdefined(mesh.edges,:angle)
+        return compute_angleEdge!(mesh.edges.angle,mesh)
+    else
+        mesh.edges.dc = compute_angleEdge(mesh)
+        return mesh.edges.angle
+    end
+end
