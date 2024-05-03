@@ -176,7 +176,9 @@ function compute_area_cells_periodic(vpos,verticesOnCell,xp::Number,yp::Number)
     return compute_area_cells_periodic!(output,vpos,verticesOnCell,xp,yp)
 end
 
-compute_area_cells(mesh::VoronoiMesh{false}) = compute_area_cells_periodic(mesh.vertices.position,mesh.cells.indices.vertices,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+compute_area_cells(cells::CellBase{false},vertices::VertexBase{false},xp::Number,yp::Number) = compute_area_cells_periodic(vertices.position,cells.indices.vertices,xp,yp)
+
+compute_area_cells(mesh::VoronoiMesh{false}) = compute_area_cells(mesh.cells.base,mesh.vertices.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 function compute_area_cells!(mesh::VoronoiMesh)
     if isdefined(mesh.cells,:area)
@@ -208,7 +210,9 @@ function compute_dcEdge_periodic(cpos,cellsOnEdge,xp::Number,yp::Number)
     return compute_dcEdge_periodic!(output,cpos,cellsOnEdge,xp,yp)
 end
 
-compute_dcEdge(mesh::VoronoiMesh{false}) = compute_dcEdge_periodic(mesh.cells.position,mesh.edges.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+compute_dcEdge(edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_dcEdge_periodic(cells.position,edges.indices.cells,xp,yp)
+
+compute_dcEdge(mesh::VoronoiMesh{false}) = compute_dcEdge_periodic(mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 function compute_dcEdge!(mesh::VoronoiMesh) 
     if isdefined(mesh.edges,:dc)
@@ -240,7 +244,9 @@ function compute_dvEdge_periodic(vpos,verticesOnEdge,xp::Number,yp::Number)
     return compute_dvEdge_periodic!(output,vpos,verticesOnEdge,xp,yp)
 end
 
-compute_dvEdge(mesh::VoronoiMesh{false}) = compute_dvEdge_periodic(mesh.vertices.position,mesh.edges.indices.vertices,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+compute_dvEdge(edges::EdgeBase{false},vertices::VertexBase{false},xp::Number,yp::Number) = compute_dvEdge_periodic(vertices.position,edges.indices.vertices,xp,yp)
+
+compute_dvEdge(mesh::VoronoiMesh{false}) = compute_dvEdge(mesh.edges.base,mesh.vertices.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 function compute_dvEdge!(mesh::VoronoiMesh) 
     if isdefined(mesh.edges,:dv)
@@ -272,7 +278,9 @@ function compute_angleEdge_periodic(cpos,cellsOnEdge,xp::Number,yp::Number)
     return compute_angleEdge_periodic!(output,cpos,cellsOnEdge,xp,yp)
 end
 
-compute_angleEdge(mesh::VoronoiMesh{false}) = compute_angleEdge_periodic(mesh.cells.position,mesh.edges.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+compute_angleEdge(edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_angleEdge_periodic(cells.position,edges.indices.cells,xp,yp)
+
+compute_angleEdge(mesh::VoronoiMesh{false}) = compute_angleEdge(mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 function compute_angleEdge!(mesh::VoronoiMesh) 
     if isdefined(mesh.edges,:angle)
