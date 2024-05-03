@@ -1,3 +1,34 @@
+@inline function check_sizes(size_expected,this_size)
+    this_size == size_expected || throw(DimensionMismatch("Output array has incorrect size.\nExpected size: $size_expected\nGot: $this_size"))
+end
+
+function compute_edge_position_periodic!(epos,cpos,cellsOnEdge,xp::Number,yp::Number)
+    check_sizes(size(cellsOnEdge),size(epos))
+
+    @inbounds for i in eachindex(cellsOnEdge)
+        ic1,ic2 = cellsOnEdge[i]
+        cpos1 = cpos[ic1]
+        cpos2 = closest(cpos1,cpos[ic2],xp,yp)
+        epos[i] = 0.5*(cpos2 + cpos1)
+    end
+    return epos
+end
+
+compute_edge_position!(epos::Vec2DxyArray,edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_edge_position_periodic!(epos,cells.position,edges.indices.cells,xp,yp)
+
+compute_edge_position!(epos::Vec2DxyArray,mesh::VoronoiMesh{false}) = compute_edge_position_periodic!(epos,mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+
+function compute_edge_position_periodic(cpos::Vec2DxyArray,cellsOnEdge,xp::Number,yp::Number)
+    epos = similar(cpos,size(cellsOnEdge))
+    return compute_edge_position_periodic!(epos,cpos,cellsOnEdge,xp,yp)
+end
+
+compute_edge_position(edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_edge_position_periodic(cells.position,edges.indices.cells,xp,yp)
+compute_edge_position!(edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_edge_position_periodic!(edges.position,cells.position,edges.indices.cells,xp,yp)
+
+compute_edge_position(mesh::VoronoiMesh{false}) = compute_edge_position(mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+compute_edge_position!(mesh::VoronoiMesh) = compute_edge_position!(mesh.edges.position,mesh)
+
 function compute_edge_normals_periodic!(n::Vec2DxyArray,cpos::Vec2DxyArray,cellsOnEdge,xp::Number,yp::Number)
 
     @inbounds for i in eachindex(cellsOnEdge)
