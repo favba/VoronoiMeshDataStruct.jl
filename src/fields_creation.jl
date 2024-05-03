@@ -30,6 +30,7 @@ compute_edge_position(mesh::VoronoiMesh{false}) = compute_edge_position(mesh.edg
 compute_edge_position!(mesh::VoronoiMesh) = compute_edge_position!(mesh.edges.position,mesh)
 
 function compute_edge_normals_periodic!(n::Vec2DxyArray,cpos::Vec2DxyArray,cellsOnEdge,xp::Number,yp::Number)
+    check_sizes(size(cellsOnEdge),size(n))
 
     @inbounds for i in eachindex(cellsOnEdge)
         ic1,ic2 = cellsOnEdge[i]
@@ -41,37 +42,54 @@ function compute_edge_normals_periodic!(n::Vec2DxyArray,cpos::Vec2DxyArray,cells
     return n
 end
 
-function compute_edge_normals_periodic(cpos::Vec2DxyArray,cellsOnEdge,xp::Number,yp::Number)
-    n = similar(cpos,size(cellsOnEdge))
-    return compute_edge_normals_periodic!(n,cpos,cellsOnEdge,xp,yp)
-end
+compute_edge_normals!(n,edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_edge_normals_periodic!(n,cells.position,edges.indices.cells,xp,yp)
+
+compute_edge_normals!(n,mesh::VoronoiMesh{false}) = compute_edge_normals!(n,mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 #Since the edges are always equidistant to both cell positions, the vector connecting them will be parallel to the arc tangent at the edge, right??
-function compute_edge_normals_on_sphere(cpos,cellsOnEdge)
-    n = similar(cpos,size(cellsOnEdge))
+function compute_edge_normals_on_sphere!(n,cpos,cellsOnEdge)
+    check_sizes(size(cellsOnEdge),size(n))
 
     @inbounds for i in eachindex(cellsOnEdge)
         ic1,ic2 = cellsOnEdge[i]
         n[i] = normalize(cpos[ic2] - cpos[ic1])
     end
-
     return n
 end
 
-compute_edge_normals(mesh::VoronoiMesh{true}) = compute_edge_normals_on_sphere(mesh.cells.position,mesh.edges.indices.cells)
-compute_edge_normals(mesh::VoronoiMesh{false}) = compute_edge_normals_periodic(mesh.cells.position,mesh.edges.indices.cells,Float64(mesh.attributes[:x_period]),Float64(mesh.attributes[:y_period]))
+compute_edge_normals!(n,edges::EdgeBase{true},cells::CellBase{true}) = compute_edge_normals_on_sphere!(n,cells.position,edges.indices.cells)
 
-function compute_edge_normals!(output,mesh::VoronoiMesh{false})
-    length(output) == mesh.edges.n || throw(DomainError("Output array doesn't have correct length.\nArray length: "*length(output)*".\nNumber of edges:"*mesh.edges.n))
-    compute_edge_normals_periodic!(output,mesh.cells.position,mesh.edges.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+compute_edge_normals!(n,mesh::VoronoiMesh{true}) = compute_edge_normals!(n,mesh.edges.base,mesh.cells.base)
+
+function compute_edge_normals_periodic(cpos,cellsOnEdge,xp::Number,yp::Number)
+    n = similar(cpos,size(cellsOnEdge))
+    return compute_edge_normals_periodic!(n,cpos,cellsOnEdge,xp,yp)
 end
 
+compute_edge_normals(edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_edge_normals_periodic(cells.position,edges.indices.cells,xp,yp)
+
+compute_edge_normals(mesh::VoronoiMesh{false}) = compute_edge_normals(mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+
+function compute_edge_normals_on_sphere(cpos,cellsOnEdge)
+    n = similar(cpos,size(cellsOnEdge))
+    return compute_edge_normals_on_sphere!(n,cpos,cellsOnEdge)
+end
+
+compute_edge_normals(edges::EdgeBase{true},cells::CellBase{true}) = compute_edge_normals_on_sphere(cells.position,edges.indices.cells)
+compute_edge_normals(mesh::VoronoiMesh{true}) = compute_edge_normals_on_sphere(mesh.cells.position,mesh.edges.indices.cells)
+
 function compute_edge_normals!(mesh::VoronoiMesh)
-    mesh.edges.normalVectors = compute_edge_normals(mesh)
-    return mesh.edges.normalVectors
+    if isdefined(mesh.edge,:normalVectors)
+        compute_edge_normals!(mesh.edge.normalVectors,mesh)
+    else
+        mesh.edge.normalVectors = compute_edge_normals(mesh)
+    end
+    return mesh.edge.normalVectors
 end
 
 function compute_area_triangles_periodic!(output,cpos,cellsOnVertex,xp::Number,yp::Number)
+    check_sizes(size(cellsOnVertex),size(output))
+
     @inbounds for v in eachindex(cellsOnVertex)
         c1,c2,c3 = cellsOnVertex[v]
         c1_pos = cpos[c1]
@@ -87,17 +105,27 @@ function compute_area_triangles_periodic(cpos,cellsOnVertex,xp,yp)
     return compute_area_triangles_periodic!(output,cpos,cellsOnVertex,xp,yp)
 end
 
-compute_area_triangles(mesh::VoronoiMesh{false}) = compute_area_triangles_periodic(mesh.cells.position,mesh.vertices.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+compute_area_triangles(vertices::VertexBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_area_triangles_periodic(cells.position,vertices.indices.cells,xp,yp)
 
-function compute_area_triangles!(output::AbstractVector,mesh::VoronoiMesh{false})
-    length(output) == mesh.vertices.n || throw(DomainError("Output array doesn't have correct length.\nArray length: "*length(output)*".\nNumber of vertices:"*mesh.vertices.n))
-    return compute_area_triangles_periodic!(output,mesh.cells.position,mesh.vertices.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+compute_area_triangles(mesh::VoronoiMesh{false}) = compute_area_triangles(mesh.vertices.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+
+compute_area_triangles!(output::AbstractVector,vertices::VertexBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_area_triangles_periodic!(output,cells.position,vertices.indices.cells,xp,yp)
+
+compute_area_triangles!(output::AbstractVector,mesh::VoronoiMesh{false}) = compute_area_triangles!(output,mesh.vertices.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+
+function compute_area_triangles!(mesh::VoronoiMesh)
+    if isdefined(mesh.vertices,:area)
+        compute_area_triangles!(mesh.vertices.area,mesh)
+    else
+        mesh.vertices.area = compute_area_triangles(mesh)
+    end
+    return mesh.vertices.area
 end
 
-compute_area_triangles!(mesh::VoronoiMesh{false}) = compute_area_triangles!(mesh.vertices.area,mesh)
-
 function compute_kite_areas_periodic!(output,cpos,vpos,cellsOnVertex,xp,yp)
-  @inbounds for v in eachindex(cellsOnVertex)
+    check_sizes(size(cellsOnVertex),size(output))
+
+    @inbounds for v in eachindex(cellsOnVertex)
         v_pos = vpos[v]
         c1,c2,c3 = cellsOnVertex[v]
         c1_pos = closest(v_pos,cpos[c1],xp,yp)
@@ -117,24 +145,31 @@ function compute_kite_areas_periodic!(output,cpos,vpos,cellsOnVertex,xp,yp)
     return output
 end
 
+compute_kite_areas!(output::AbstractVector,vertices::VertexBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_kite_areas_periodic!(output,cells.position,vertices.position,vertices.indices.cells,xp,yp)
+
+compute_kite_areas!(output::AbstractVector,mesh::VoronoiMesh{false}) = compute_kite_areas_periodic!(output,mesh.cells.position,mesh.vertices.position,mesh.vertices.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+
 function compute_kite_areas_periodic(cpos,vpos,cellsOnVertex,xp,yp)
     output = Vector{NTuple{3,nonzero_eltype(eltype(cpos))}}(undef,length(cellsOnVertex))
     return compute_kite_areas_periodic!(output,cpos,vpos,cellsOnVertex,xp,yp)
 end
 
-compute_kite_areas(mesh::VoronoiMesh{false}) = compute_kite_areas_periodic(mesh.cells.position,mesh.vertices.position,mesh.vertices.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+compute_kite_areas(vertices::VertexBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_kite_areas_periodic(cells.position,vertices.position,vertices.indices.cells,xp,yp)
 
-function compute_kite_areas!(output::AbstractVector,mesh::VoronoiMesh{false})
-    length(output) == mesh.vertices.n || throw(DomainError("Output array doesn't have correct length.\nArray length: "*length(output)*".\nNumber of vertices:"*mesh.vertices.n))
-    return compute_kite_areas_periodic!(output,mesh.cells.position,mesh.vertices.position,mesh.vertices.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
-end
+compute_kite_areas(mesh::VoronoiMesh{false}) = compute_kite_areas(mesh.vertices.base, mesh.cells.base, mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 function compute_area_cells_periodic!(output,vpos,verticesOnCell,xp::Number,yp::Number)
+    check_sizes(size(verticesOnCell),size(output))
+
     @inbounds for c in eachindex(verticesOnCell)
         output[c] = area(vpos,verticesOnCell[c],xp,yp)
     end
     return output
 end
+
+compute_area_cells!(output::AbstractVector,cells::CellBase{false},vertices::VertexBase{false},xp::Number,yp::Number) = compute_area_cells_periodic!(output,vertices.position,cells.indices.vertices,xp,yp)
+
+compute_area_cells!(output::AbstractVector,mesh::VoronoiMesh{false}) = compute_area_cells!(output,mesh.cells.base,mesh.vertices.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 function compute_area_cells_periodic(vpos,verticesOnCell,xp::Number,yp::Number)
     output = Vector{nonzero_eltype(eltype(vpos))}(undef,length(verticesOnCell))
@@ -143,14 +178,18 @@ end
 
 compute_area_cells(mesh::VoronoiMesh{false}) = compute_area_cells_periodic(mesh.vertices.position,mesh.cells.indices.vertices,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
-function compute_area_cells!(output::AbstractVector,mesh::VoronoiMesh{false})
-    length(output) == mesh.cells.n || throw(DomainError("Output array doesn't have correct length.\nArray length: "*length(output)*".\nNumber of cells:"*mesh.cells.n))
-    return compute_area_cells_periodic!(output,mesh.vertices.position,mesh.cells.indices.vertices,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+function compute_area_cells!(mesh::VoronoiMesh)
+    if isdefined(mesh.cells,:area)
+        compute_area_cells!(mesh.cells.area,mesh)
+    else
+        mesh.cells.area = compute_area_cells(mesh)
+    end
+    return mesh.cells.area
 end
 
-compute_area_cells!(mesh::VoronoiMesh{false}) = compute_area_cells!(mesh.cells.area,mesh)
-
 function compute_dcEdge_periodic!(output,cpos,cellsOnEdge,xp::Number,yp::Number)
+    check_sizes(size(cellsOnEdge),size(output))
+
     @inbounds for e in eachindex(cellsOnEdge)
         c1,c2 = cellsOnEdge[e]
         c1pos = cpos[c1]
@@ -160,10 +199,9 @@ function compute_dcEdge_periodic!(output,cpos,cellsOnEdge,xp::Number,yp::Number)
     return output
 end
 
-function compute_dcEdge!(output,mesh::VoronoiMesh{false}) 
-    length(output) == mesh.edges.n || throw(DomainError("Output array doesn't have correct length.\nArray length: "*length(output)*".\nNumber of edges:"*mesh.edges.n))
-    return compute_dcEdge_periodic!(output,mesh.cells.position,mesh.edges.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
-end
+compute_dcEdge!(output,edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_dcEdge_periodic!(output,cells.position,edges.indices.cells,xp,yp)
+
+compute_dcEdge!(output,mesh::VoronoiMesh{false}) = compute_dcEdge!(output,mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 function compute_dcEdge_periodic(cpos,cellsOnEdge,xp::Number,yp::Number)
     output = Vector{nonzero_eltype(eltype(cpos))}(undef,length(cellsOnEdge))
@@ -182,6 +220,8 @@ function compute_dcEdge!(mesh::VoronoiMesh)
 end
 
 function compute_dvEdge_periodic!(output,vpos,verticesOnEdge,xp::Number,yp::Number)
+    check_sizes(size(verticesOnEdge),size(output))
+
     @inbounds for e in eachindex(verticesOnEdge)
         v1,v2 = verticesOnEdge[e]
         v1pos = vpos[v1]
@@ -191,10 +231,9 @@ function compute_dvEdge_periodic!(output,vpos,verticesOnEdge,xp::Number,yp::Numb
     return output
 end
 
-function compute_dvEdge!(output,mesh::VoronoiMesh{false}) 
-    length(output) == mesh.edges.n || throw(DomainError("Output array doesn't have correct length.\nArray length: "*length(output)*".\nNumber of edges:"*mesh.edges.n))
-    return compute_dvEdge_periodic!(output,mesh.vertices.position,mesh.edges.indices.vertices,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
-end
+compute_dvEdge!(output,edges::EdgeBase{false},vertices::VertexBase{false},xp::Number,yp::Number) = compute_dvEdge_periodic!(output,vertices.position,edges.indices.vertices,xp,yp)
+
+compute_dvEdge!(output,mesh::VoronoiMesh{false}) = compute_dvEdge!(output,mesh.edges.base,mesh.vertices.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 function compute_dvEdge_periodic(vpos,verticesOnEdge,xp::Number,yp::Number)
     output = Vector{nonzero_eltype(eltype(vpos))}(undef,length(verticesOnEdge))
@@ -213,7 +252,9 @@ function compute_dvEdge!(mesh::VoronoiMesh)
 end
 
 function compute_angleEdge_periodic!(output,cpos,cellsOnEdge,xp::Number,yp::Number)
-  @inbounds for i in eachindex(cellsOnEdge)
+    check_sizes(size(cellsOnEdge),size(output))
+
+    @inbounds for i in eachindex(cellsOnEdge)
         ic1,ic2 = cellsOnEdge[i]
         cpos2 = cpos[ic2]
         cpos1 = closest(cpos2,cpos[ic1],xp,yp)
@@ -222,10 +263,9 @@ function compute_angleEdge_periodic!(output,cpos,cellsOnEdge,xp::Number,yp::Numb
     return output
 end
 
-function compute_angleEdge!(output,mesh::VoronoiMesh{false}) 
-    length(output) == mesh.edges.n || throw(DomainError("Output array doesn't have correct length.\nArray length: "*length(output)*".\nNumber of edges:"*mesh.edges.n))
-    return compute_angleEdge_periodic!(output,mesh.cells.position,mesh.edges.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
-end
+compute_angleEdge!(output,edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_angleEdge_periodic!(output,cells.position,edges.indices.cells,xp,yp)
+
+compute_angleEdge!(output,mesh::VoronoiMesh{false}) = compute_angleEdge!(output,mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 function compute_angleEdge_periodic(cpos,cellsOnEdge,xp::Number,yp::Number)
     output = Vector{nonzero_eltype(eltype(cpos))}(undef,length(cellsOnEdge))
@@ -283,6 +323,8 @@ function sign_edge((c1,c2),c)
 end
 
 function compute_weightsOnEdge_trisk!(weightsOnEdge,verticesOnEdge,cellsOnEdge,edgesOnEdge,dcEdge,dvEdge,kiteAreasOnVertex,cellsOnVertex,nEdgesOnCell,areaCell)
+    check_sizes((max_length(eltype(edgesOnEdge)),length(edgesOnEdge)),size(weightsOnEdge))
+
     for e in eachindex(edgesOnEdge)
         c1,c2 = cellsOnEdge[e]
         inds_e = edgesOnEdge[e]
@@ -292,6 +334,7 @@ function compute_weightsOnEdge_trisk!(weightsOnEdge,verticesOnEdge,cellsOnEdge,e
         inv_a_c1 = inv(areaCell[c1])
         previous_vs = verticesOnEdge[e]
         R = zero(eltype(weightsOnEdge))
+
         for i in 1:(nEdges_c1-1)
             next_e = inds_e[i]
             next_vs = verticesOnEdge[next_e]
@@ -305,6 +348,7 @@ function compute_weightsOnEdge_trisk!(weightsOnEdge,verticesOnEdge,cellsOnEdge,e
         nEdges_c2 = nEdgesOnCell[c2]
         inv_a_c2 = inv(areaCell[c2])
         R = zero(eltype(weightsOnEdge))
+
         for i in nEdges_c1:(nEdges_c1 + nEdges_c2 - 2)
             next_e = inds_e[i]
             next_vs = verticesOnEdge[next_e]
@@ -318,19 +362,24 @@ function compute_weightsOnEdge_trisk!(weightsOnEdge,verticesOnEdge,cellsOnEdge,e
     return weightsOnEdge
 end
 
+function compute_weightsOnEdge_trisk!(w,edges::EdgeBase,velRecon::EdgeVelocityReconstruction,cells::CellBase,vertices::VertexBase,dcEdge,dvEdge,kiteAreasOnVertex,areaCell)
+    verticesOnEdge = edges.indices.vertices
+    cellsOnEdge = edges.indices.cells
+    edgesOnEdge = velRecon.indices
+    cellsOnVertex = vertices.indices.cells
+    nEdgesOnCell = cells.nEdges
+
+    return compute_weightsOnEdge_trisk!(w,verticesOnEdge,cellsOnEdge,edgesOnEdge,dcEdge,dvEdge,kiteAreasOnVertex,cellsOnVertex,nEdgesOnCell,areaCell)
+end
+
+compute_weightsOnEdge_trisk!(weightsOnEdge,mesh::VoronoiMesh) = compute_weightsOnEdge_trisk!(weightsOnEdge,mesh.edges.base,mesh.edges.velRecon,mesh.cells.base,mesh.vertices.base,mesh.dcEdge,mesh.dvEdge,mesh.kiteAreasOnVertex,mesh.areaCell)
+
 function compute_weightsOnEdge_trisk(verticesOnEdge,cellsOnEdge,edgesOnEdge,dcEdge,dvEdge,kiteAreasOnVertex,cellsOnVertex,nEdgesOnCell,areaCell)
     T = eltype(eltype(kiteAreasOnVertex))
     nedges_max = max_length(eltype(edgesOnEdge))
     nedges = length(verticesOnEdge)
     weightsOnEdge = zeros(T,nedges_max,nedges)
     return compute_weightsOnEdge_trisk!(weightsOnEdge,verticesOnEdge,cellsOnEdge,edgesOnEdge,dcEdge,dvEdge,kiteAreasOnVertex,cellsOnVertex,nEdgesOnCell,areaCell)
-end
-
-function compute_weightsOnEdge_trisk!(weightsOnEdge,mesh::VoronoiMesh)
-    nedges_max = max_length(eltype(mesh.edgesOnEdge))
-    nedges = length(mesh.verticesOnEdge)
-    size(weightsOnEdge) == (nedges_max,nedges) || throw(DimensionMismatch())
-    return compute_weightsOnEdge_trisk!(weightsOnEdge,mesh.verticesOnEdge,mesh.cellsOnEdge,mesh.edgesOnEdge,mesh.dcEdge,mesh.dvEdge,mesh.kiteAreasOnVertex,mesh.cellsOnVertex,mesh.nEdgesOnCell,mesh.areaCell)
 end
 
 function compute_weightsOnEdge_trisk(mesh::VoronoiMesh)
