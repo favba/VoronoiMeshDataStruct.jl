@@ -14,11 +14,11 @@ function compute_edge_position_periodic!(epos,cpos,cellsOnEdge,xp::Number,yp::Nu
     return epos
 end
 
-compute_edge_position!(epos::Vec2DxyArray,edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_edge_position_periodic!(epos,cells.position,edges.indices.cells,xp,yp)
+compute_edge_position!(epos,edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_edge_position_periodic!(epos,cells.position,edges.indices.cells,xp,yp)
 
-compute_edge_position!(epos::Vec2DxyArray,mesh::VoronoiMesh{false}) = compute_edge_position_periodic!(epos,mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+compute_edge_position!(epos,mesh::VoronoiMesh{false}) = compute_edge_position_periodic!(epos,mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
-function compute_edge_position_periodic(cpos::Vec2DxyArray,cellsOnEdge,xp::Number,yp::Number)
+function compute_edge_position_periodic(cpos,cellsOnEdge,xp::Number,yp::Number)
     epos = similar(cpos,size(cellsOnEdge))
     return compute_edge_position_periodic!(epos,cpos,cellsOnEdge,xp,yp)
 end
@@ -29,7 +29,7 @@ compute_edge_position!(edges::EdgeBase{false},cells::CellBase{false},xp::Number,
 compute_edge_position(mesh::VoronoiMesh{false}) = compute_edge_position(mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 compute_edge_position!(mesh::VoronoiMesh) = compute_edge_position!(mesh.edges.position,mesh)
 
-function compute_edge_normals_periodic!(n::Vec2DxyArray,cpos::Vec2DxyArray,cellsOnEdge,xp::Number,yp::Number)
+function compute_edge_normals_periodic!(n,cpos,cellsOnEdge,xp::Number,yp::Number)
     check_sizes(size(cellsOnEdge),size(n))
 
     @inbounds for i in eachindex(cellsOnEdge)
@@ -109,9 +109,9 @@ compute_area_triangles(vertices::VertexBase{false},cells::CellBase{false},xp::Nu
 
 compute_area_triangles(mesh::VoronoiMesh{false}) = compute_area_triangles(mesh.vertices.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
-compute_area_triangles!(output::AbstractVector,vertices::VertexBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_area_triangles_periodic!(output,cells.position,vertices.indices.cells,xp,yp)
+compute_area_triangles!(output,vertices::VertexBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_area_triangles_periodic!(output,cells.position,vertices.indices.cells,xp,yp)
 
-compute_area_triangles!(output::AbstractVector,mesh::VoronoiMesh{false}) = compute_area_triangles!(output,mesh.vertices.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+compute_area_triangles!(output,mesh::VoronoiMesh{false}) = compute_area_triangles!(output,mesh.vertices.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 function compute_area_triangles!(mesh::VoronoiMesh)
     if isdefined(mesh.vertices,:area)
@@ -145,9 +145,9 @@ function compute_kite_areas_periodic!(output,cpos,vpos,cellsOnVertex,xp,yp)
     return output
 end
 
-compute_kite_areas!(output::AbstractVector,vertices::VertexBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_kite_areas_periodic!(output,cells.position,vertices.position,vertices.indices.cells,xp,yp)
+compute_kite_areas!(output,vertices::VertexBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_kite_areas_periodic!(output,cells.position,vertices.position,vertices.indices.cells,xp,yp)
 
-compute_kite_areas!(output::AbstractVector,mesh::VoronoiMesh{false}) = compute_kite_areas_periodic!(output,mesh.cells.position,mesh.vertices.position,mesh.vertices.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+compute_kite_areas!(output,mesh::VoronoiMesh{false}) = compute_kite_areas_periodic!(output,mesh.cells.position,mesh.vertices.position,mesh.vertices.indices.cells,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 function compute_kite_areas_periodic(cpos,vpos,cellsOnVertex,xp,yp)
     output = Vector{NTuple{3,nonzero_eltype(eltype(cpos))}}(undef,length(cellsOnVertex))
@@ -167,9 +167,9 @@ function compute_area_cells_periodic!(output,vpos,verticesOnCell,xp::Number,yp::
     return output
 end
 
-compute_area_cells!(output::AbstractVector,cells::CellBase{false},vertices::VertexBase{false},xp::Number,yp::Number) = compute_area_cells_periodic!(output,vertices.position,cells.indices.vertices,xp,yp)
+compute_area_cells!(output,cells::CellBase{false},vertices::VertexBase{false},xp::Number,yp::Number) = compute_area_cells_periodic!(output,vertices.position,cells.indices.vertices,xp,yp)
 
-compute_area_cells!(output::AbstractVector,mesh::VoronoiMesh{false}) = compute_area_cells!(output,mesh.cells.base,mesh.vertices.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+compute_area_cells!(output,mesh::VoronoiMesh{false}) = compute_area_cells!(output,mesh.cells.base,mesh.vertices.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 function compute_area_cells_periodic(vpos,verticesOnCell,xp::Number,yp::Number)
     output = Vector{nonzero_eltype(eltype(vpos))}(undef,length(verticesOnCell))
