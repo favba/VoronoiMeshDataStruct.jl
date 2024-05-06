@@ -27,6 +27,7 @@ export compute_weightsOnEdge_trisk, compute_weightsOnEdge_trisk!
 export create_cells_polygons, create_cells_polygons_periodic, create_dual_triangles, create_dual_triangles_periodic, create_edge_quadrilaterals, create_edge_quadrilaterals_periodic
 export create_cell_linesegments, create_cell_linesegments_periodic
 
+export graph_partition
 
 include("variable_length_indices.jl")
 

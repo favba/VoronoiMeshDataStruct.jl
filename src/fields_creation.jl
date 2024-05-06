@@ -393,3 +393,21 @@ end
 function compute_weightsOnEdge_trisk(mesh::VoronoiMesh)
     return compute_weightsOnEdge_trisk(mesh.verticesOnEdge,mesh.cellsOnEdge,mesh.edgesOnEdge,mesh.dcEdge,mesh.dvEdge,mesh.kiteAreasOnVertex,mesh.cellsOnVertex,mesh.nEdgesOnCell,mesh.areaCell)
 end
+
+function graph_partition(cellsOnCell::Vector{<:VariableLengthIndices},nEdges::Integer)
+    nCells = length(cellsOnCell)
+    outIO = IOBuffer()
+    println(outIO, nCells,' ',nEdges)
+
+    @inbounds for i in eachindex(cellsOnCell)
+        map(x->print(outIO,x,' '),cellsOnCell[i])
+        skip(outIO,-1)
+        println(outIO)
+    end
+    seekstart(outIO)
+    return outIO
+end
+
+graph_partition(cells::Union{CellBase,CellInfo},edges::Union{EdgeBase,EdgeInfo}) = graph_partition(cells.indices.cells,edges.n)
+
+graph_partition(mesh::VoronoiMesh) = graph_partition(mesh.cells,mesh.edges)
