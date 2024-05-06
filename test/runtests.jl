@@ -43,6 +43,7 @@ end
     @test all(x->(x[1]≈x[2]),  zip(compute_dcEdge(mesh),mesh.edges.dc))
     @test all(x->(x[1]≈x[2]),  zip(compute_dvEdge(mesh),mesh.edges.dv))
     @test all(x->(x[1]≈x[2]),  zip(compute_angleEdge(mesh),mesh.edges.angle))
-    @test all(x->(closest(x[2],x[1],xp,yp)≈x[2]),  zip(compute_edge_position(mesh),mesh.edges.position))
+    #@test all(x->(closest(x[2],x[1],xp,yp)≈x[2]),  zip(compute_edge_position(mesh),mesh.edges.position))
+    @test all(x->(x[1]≈x[2]),  zip(compute_edge_position(mesh),mesh.edges.position))
     @test all(x->isapprox(x[1],x[2],atol=1e-7),  zip(compute_weightsOnEdge_trisk(mesh),mesh.weightsOnEdge))
 end

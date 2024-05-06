@@ -7,8 +7,8 @@ function compute_edge_position_periodic!(epos,cpos,cellsOnEdge,xp::Number,yp::Nu
 
     @inbounds for i in eachindex(cellsOnEdge)
         ic1,ic2 = cellsOnEdge[i]
-        cpos1 = cpos[ic1]
-        cpos2 = closest(cpos1,cpos[ic2],xp,yp)
+        cpos2 = cpos[ic2]
+        cpos1 = closest(cpos2,cpos[ic1],xp,yp)
         epos[i] = 0.5*(cpos2 + cpos1)
     end
     return epos
