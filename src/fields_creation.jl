@@ -212,7 +212,7 @@ end
 
 compute_dcEdge(edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_dcEdge_periodic(cells.position,edges.indices.cells,xp,yp)
 
-compute_dcEdge(mesh::VoronoiMesh{false}) = compute_dcEdge_periodic(mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+compute_dcEdge(mesh::VoronoiMesh{false}) = compute_dcEdge(mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 function compute_dcEdge!(mesh::VoronoiMesh) 
     if isdefined(mesh.edges,:dc)
