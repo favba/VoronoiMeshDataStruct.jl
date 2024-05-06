@@ -263,4 +263,15 @@ end
 
 precompile(VoronoiMeshDataStruct.VoronoiMesh,(NCDatasets.NCDataset{Nothing,Missing},))
 
+for func in  (:VoronoiMesh,
+              :CellInfo,:CellBase,:CellConnectivity,
+              :VertexInfo,:VertexBase,:VertexConnectivity,
+              :EdgeInfo,:EdgeBase,:EdgeConnectivity,:EdgeVelocityReconstruction)
+
+    @eval begin
+        VoronoiMeshDataStruct.$func(file_name::String) = NCDataset(file_name) do f; VoronoiMeshDataStruct.$func(f);end
+        precompile(VoronoiMeshDataStruct.$func,(String,))
+    end
+end
+
 end
