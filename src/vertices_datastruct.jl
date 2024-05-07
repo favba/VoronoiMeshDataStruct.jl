@@ -17,7 +17,7 @@ struct VertexBase{S,TI<:Integer, TF<:Real,Tz<:Number}
     """Vertices connectivity data struct"""
     indices::VertexConnectivity{TI}
     """Vertex's x,y,z coordinates"""
-    position::VecMaybe2DxyArray{TF,Tz,1}
+    position::TensorsLite.VecMaybe2DxyArray{TF,Tz,1}
     onSphere::Val{S}
 end
 
