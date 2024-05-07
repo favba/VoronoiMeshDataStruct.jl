@@ -16,7 +16,7 @@ end
 
 compute_edge_position!(epos,edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_edge_position_periodic!(epos,cells.position,edges.indices.cells,xp,yp)
 
-compute_edge_position!(epos,mesh::VoronoiMesh{false}) = compute_edge_position_periodic!(epos,mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+compute_edge_position!(epos,mesh::VoronoiMesh{false}) = compute_edge_position!(epos,mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 function compute_edge_position_periodic(cpos,cellsOnEdge,xp::Number,yp::Number)
     epos = similar(cpos,size(cellsOnEdge))
