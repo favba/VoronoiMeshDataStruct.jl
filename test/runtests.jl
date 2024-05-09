@@ -46,4 +46,6 @@ end
     #@test all(x->(closest(x[2],x[1],xp,yp)≈x[2]),  zip(compute_edge_position(mesh),mesh.edges.position))
     @test all(x->(x[1]≈x[2]),  zip(compute_edge_position(mesh),mesh.edges.position))
     @test all(x->isapprox(x[1],x[2],atol=1e-7),  zip(compute_weightsOnEdge_trisk(mesh),mesh.weightsOnEdge))
+
+    @test length(find_obtuse_triangles(mesh)) == 0
 end
