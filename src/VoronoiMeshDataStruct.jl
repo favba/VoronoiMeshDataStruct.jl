@@ -28,6 +28,7 @@ export create_cells_polygons, create_cells_polygons_periodic, create_dual_triang
 export create_cell_linesegments, create_cell_linesegments_periodic
 
 export graph_partition, find_obtuse_triangles
+export select_kite_area
 
 include("variable_length_indices.jl")
 

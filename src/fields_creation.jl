@@ -306,6 +306,11 @@ function select_shared_vertex(next_vs, previous_vs)
     return v
 end
 
+"""
+    select_kite_area(kiteAreaOnVertex::Vector{NTuple{3}}, cellsOnVertex::Vector{NTuple{3,<:Integer}}, v_i::Integer, c_i::Integer)
+Returns the kite Area associated with cell `c_i` and vertex `v_i`.
+Throws an error if vertex `v_i` doens't belong to cell `c_i`.
+"""
 function select_kite_area(kiteAreaOnVertex,cellsOnVertex,v,c)
     areas = kiteAreaOnVertex[v]
     cells = cellsOnVertex[v]
