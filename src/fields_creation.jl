@@ -79,12 +79,12 @@ compute_edge_normals(edges::EdgeBase{true},cells::CellBase{true}) = compute_edge
 compute_edge_normals(mesh::VoronoiMesh{true}) = compute_edge_normals_on_sphere(mesh.cells.position,mesh.edges.indices.cells)
 
 function compute_edge_normals!(mesh::VoronoiMesh)
-    if isdefined(mesh.edge,:normalVectors)
-        compute_edge_normals!(mesh.edge.normalVectors,mesh)
+    if isdefined(mesh.edges,:normalVectors)
+        compute_edge_normals!(mesh.edges.normalVectors,mesh)
     else
-        mesh.edge.normalVectors = compute_edge_normals(mesh)
+        mesh.edges.normalVectors = compute_edge_normals(mesh)
     end
-    return mesh.edge.normalVectors
+    return mesh.edges.normalVectors
 end
 
 function compute_area_triangles_periodic!(output,cpos,cellsOnVertex,xp::Number,yp::Number)
