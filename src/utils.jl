@@ -51,4 +51,4 @@ function periodic_edges_mask(dc,cellsOnEdge,c_pos)
     return mask
 end
 
-periodic_edges_mask(mesh::VoronoiMesh) = periodc_edges_mask(mesh.edges.dc, mesh.edges.indices.cells, mesh.cells.position)
+periodic_edges_mask(mesh::VoronoiMesh) = periodic_edges_mask(mesh.edges.dc, mesh.edges.indices.cells, mesh.cells.position)
