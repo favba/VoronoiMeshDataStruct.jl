@@ -1,10 +1,11 @@
+"Struct that stores indices of elements surrounding Cell (vertices, edges and neighboring cells)"
 struct CellConnectivity{MAX_N_EDGES,TI<:Integer}
     """Indices of vertices forming the cell"""
-    vertices::Vector{VariableLengthIndices{MAX_N_EDGES,TI}}
+    vertices::Vector{VariableLengthStaticVector{MAX_N_EDGES,TI}}
     """Indices of the edges forming the cell"""
-    edges::Vector{VariableLengthIndices{MAX_N_EDGES,TI}}
+    edges::Vector{VariableLengthStaticVector{MAX_N_EDGES,TI}}
     """Indices of cells surrounding the given cell"""
-    cells::Vector{VariableLengthIndices{MAX_N_EDGES,TI}}
+    cells::Vector{VariableLengthStaticVector{MAX_N_EDGES,TI}}
 end
 
 Base.getproperty(cell::CellConnectivity,s::Symbol) = _getproperty(cell,Val(s))
@@ -16,7 +17,9 @@ _getproperty(cell::CellConnectivity,::Val{:cellsOnCell}) = getfield(cell,:cells)
 max_n_edges(::Type{<:CellConnectivity{N}}) where N = N
 integer_precision(::Type{<:CellConnectivity{N,T}}) where {N,T} = T
 
+"Struct with Cell's essential information"
 struct CellBase{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number}
+    "Number of Cells"
     n::Int
     """Cells connectivity data struct"""
     indices::CellConnectivity{MAX_N_EDGES,TI} 
@@ -24,6 +27,7 @@ struct CellBase{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number}
     nEdges::Vector{TI} 
     """Cell's x,y,z coordinates"""
     position::TensorsLite.VecMaybe2DxyArray{TF,Tz,1}
+    "Val{Bool} that tells if cells are on the sphere or not"
     onSphere::Val{S}
 end
 
@@ -43,9 +47,13 @@ _getproperty(cell::CellBase,::Val{:xCell}) = getfield(cell,:position).x
 _getproperty(cell::CellBase,::Val{:yCell}) = getfield(cell,:position).y
 _getproperty(cell::CellBase,::Val{:zCell}) = getfield(cell,:position).z
 
+"Struct holding all Cell's information (may be incompletely initialized)"
 mutable struct CellInfo{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number}
+    "Struct containing Cell's essential information"
     const base::CellBase{S,MAX_N_EDGES,TI,TF,Tz}
+    "Longitiude of Cell center (if on the sphere)"
     longitude::Vector{TF}
+    "Latitude of Cell center (if on the sphere)"
     latitude::Vector{TF}
     """Mesh density function evaluated at cell (used when generating the cell)"""
     meshDensity::Vector{TF}

@@ -1,4 +1,4 @@
-function graph_partition(cellsOnCell::Vector{<:VariableLengthIndices},nEdges::Integer)
+function graph_partition(cellsOnCell::Vector{<:VariableLengthStaticVector},nEdges::Integer)
     nCells = length(cellsOnCell)
     outIO = IOBuffer()
     println(outIO, nCells,' ',nEdges)

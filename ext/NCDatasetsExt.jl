@@ -11,31 +11,33 @@ function _on_a_sphere(ncfile::NCDatasets.NCDataset)
     end
 end
 
-function construct_indicesOnElement(n::Val{maxEdges},indicesOnCellArray::AbstractMatrix{TI}) where {maxEdges,TI}
-    indicesOnCell = Vector{VariableLengthIndices{maxEdges,TI}}(undef,size(indicesOnCellArray,2))
-    @inbounds for k in axes(indicesOnCellArray,2)
-        indicesOnCell[k] = VariableLengthIndices{maxEdges}(ntuple(i->(@inbounds indicesOnCellArray[i,k]),n))
+function construct_elementsOnElement(n::Val{maxEdges},elementsOnElementArray::AbstractMatrix{TE},nElemtensOnElement::AbstractVector{TI}) where {maxEdges,TE,TI}
+    elementsOnElement = Vector{VariableLengthStaticVector{maxEdges,TE}}(undef,size(elementsOnElementArray,2))
+    @inbounds for k in axes(elementsOnElementArray,2)
+        elementsOnElement[k] = VariableLengthStaticVector{maxEdges}(ntuple(i->(@inbounds elementsOnElementArray[i,k]),n),nElemtensOnElement[k])
     end
-    return indicesOnCell
+    return elementsOnElement
 end
 
-function VoronoiMeshDataStruct.CellConnectivity(me::Val{maxEdges},ncfile::NCDatasets.NCDataset) where {maxEdges}
+function VoronoiMeshDataStruct.CellConnectivity(me::Val{maxEdges},nEdgesOnCell::AbstractVector{TI},ncfile::NCDatasets.NCDataset) where {maxEdges,TI}
     verticesOnCellArray = ncfile["verticesOnCell"][:,:]
-    verticesOnCell = construct_indicesOnElement(me,verticesOnCellArray)
+    verticesOnCell = construct_elementsOnElement(me,verticesOnCellArray,nEdgesOnCell)
 
     edgesOnCellArray = ncfile["edgesOnCell"][:,:]
-    edgesOnCell = construct_indicesOnElement(me,edgesOnCellArray)
+    edgesOnCell = construct_elementsOnElement(me,edgesOnCellArray,nEdgesOnCell)
 
     cellsOnCellArray = ncfile["cellsOnCell"][:,:]
-    cellsOnCell = construct_indicesOnElement(me,cellsOnCellArray)
+    cellsOnCell = construct_elementsOnElement(me,cellsOnCellArray,nEdgesOnCell)
 
     return CellConnectivity(verticesOnCell,edgesOnCell,cellsOnCell)
 end
 
 for N in 6:12
-    precompile(VoronoiMeshDataStruct.CellConnectivity,(Val{N},NCDatasets.NCDataset{Nothing,Missing}))
     for T in (Int64,Int32)
-        precompile(construct_indicesOnElement,(Val{N},Matrix{T}))
+        for TE in (Int64,Int32,Float64,Float32)
+            precompile(construct_elementsOnElement,(Val{N},Matrix{TE},Vector{T}))
+        end
+        precompile(VoronoiMeshDataStruct.CellConnectivity,(Val{N},Vector{T},NCDatasets.NCDataset{Nothing,Missing}))
     end
 end
 
@@ -43,13 +45,13 @@ function VoronoiMeshDataStruct.CellConnectivity(ncfile::NCDatasets.NCDataset)
     nEdgesOnCell = ncfile["nEdgesOnCell"][:]::Vector{Int32}
     maxEdges = Int(maximum(nEdgesOnCell))
     
-    return CellConnectivity(Val(maxEdges),ncfile)
+    return CellConnectivity(Val(maxEdges),nEdgesOnCell,ncfile)
 end
 
 precompile(VoronoiMeshDataStruct.CellConnectivity,(NCDatasets.NCDataset{Nothing,Missing},))
 
 function VoronoiMeshDataStruct.CellBase(onSphere::Val{on_sphere},mE::Val{maxEdges},nEdges,ncfile::NCDatasets.NCDataset) where {on_sphere,maxEdges}
-    indices = CellConnectivity(mE,ncfile)
+    indices = CellConnectivity(mE,nEdges,ncfile)
     position = on_sphere ? VecArray(x=ncfile["xCell"][:], y=ncfile["yCell"][:], z=ncfile["zCell"][:]) : VecArray(x=ncfile["xCell"][:], y=ncfile["yCell"][:])
 
     return CellBase(length(nEdges),indices,nEdges,position,onSphere)
@@ -214,8 +216,9 @@ precompile(VoronoiMeshDataStruct.EdgeVelocityReconstruction,(NCDatasets.NCDatase
 
 function VoronoiMeshDataStruct.EdgeVelocityReconstruction(ne::Val{max_n_edges},nEdges,ncfile::NCDatasets.NCDataset) where {max_n_edges}
     edgesOnEdgeArray = ncfile["edgesOnEdge"][:,:]::Matrix{Int32}
-    indices = construct_indicesOnElement(ne,edgesOnEdgeArray)
-    weights = ncfile["weightsOnEdge"][Base.OneTo(max_n_edges),:]
+    indices = construct_elementsOnElement(ne,edgesOnEdgeArray,nEdges)
+    weightsArray = ncfile["weightsOnEdge"][:,:]
+    weights = construct_elementsOnElement(ne,weightsArray,nEdges)
     return EdgeVelocityReconstruction(nEdges,indices,weights)
 end
 

@@ -26,33 +26,15 @@ using Test
     @test a[3] === 3.0
 end
 
-@testset "VariableLengthIndices" begin
-
-    @test_throws DomainError VoronoiMeshDataStruct.VariableLengthIndices((1,0,2,3,5,0,0))
-
-    @test_throws DomainError VoronoiMeshDataStruct.VariableLengthIndices((-1,2,3,5,0,0))
-
-    @test typeof(VoronoiMeshDataStruct.VariableLengthIndices((1,2,3,4,5,0,0,0))) == VoronoiMeshDataStruct.VariableLengthIndices{8,Int}
-
-    a = VoronoiMeshDataStruct.VariableLengthIndices((1,2,3,4,5,0,0,0))
-
-    @test length(a) == 5
-    @test VoronoiMeshDataStruct.max_length(a) == 8
-    @test VoronoiMeshDataStruct.max_length(typeof(a)) == 8
-
-    @test collect(a) == [1, 2, 3, 4, 5]
-
-    @test_throws BoundsError getindex(a,6) 
-
-    @test a[3] == 3
-
-    @test VoronoiMeshDataStruct.VariableLengthIndices{6}((1,2,3)) === VoronoiMeshDataStruct.VariableLengthIndices((1,2,3,0,0,0))
-
-    @test VoronoiMeshDataStruct.VariableLengthIndices{5}(a) === VoronoiMeshDataStruct.VariableLengthIndices((1,2,3,4,5))
-
-    @test VoronoiMeshDataStruct.VariableLengthIndices{10}(a) === VoronoiMeshDataStruct.VariableLengthIndices((1,2,3,4,5,0,0,0,0,0))
-
-    @test_throws DomainError VoronoiMeshDataStruct.VariableLengthIndices{3}(a)
+function compare_weights_trisk(m::Matrix,v::Vector{<:VariableLengthStaticVector})
+    r = true
+    for j in eachindex(v)
+        vals = v[j]
+        for i in eachindex(vals)
+            r &= isapprox(vals[i],m[i,j],atol=1e-7)
+        end
+    end
+    return r
 end
 
 @testset "Fields Creation Planar Mesh" begin
@@ -66,9 +48,8 @@ end
     @test all(x->(x[1]≈x[2]),  zip(compute_dcEdge(mesh),mesh.edges.dc))
     @test all(x->(x[1]≈x[2]),  zip(compute_dvEdge(mesh),mesh.edges.dv))
     @test all(x->(x[1]≈x[2]),  zip(compute_angleEdge(mesh),mesh.edges.angle))
-    #@test all(x->(closest(x[2],x[1],xp,yp)≈x[2]),  zip(compute_edge_position(mesh),mesh.edges.position))
     @test all(x->(x[1]≈x[2]),  zip(compute_edge_position(mesh),mesh.edges.position))
-    @test all(x->isapprox(x[1],x[2],atol=1e-7),  zip(compute_weightsOnEdge_trisk(mesh),mesh.weightsOnEdge))
+    @test compare_weights_trisk(compute_weightsOnEdge_trisk(mesh),mesh.weightsOnEdge)
 
     @test length(find_obtuse_triangles(mesh)) == 0
 end
