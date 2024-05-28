@@ -2,7 +2,7 @@ module VoronoiMeshDataStruct
 
 using TensorsLite, TensorsLiteGeometry
 
-export VariableLengthIndices
+export VariableLengthIndices, VariableLengthStaticVector
 export CellConnectivity, CellBase, CellInfo
 export VertexConnectivity, VertexBase, VertexInfo
 export EdgeConnectivity, EdgeBase, EdgeVelocityReconstruction, EdgeInfo
@@ -30,6 +30,7 @@ export create_cell_linesegments, create_cell_linesegments_periodic
 export graph_partition, find_obtuse_triangles
 export select_kite_area, periodic_edges_mask
 
+include("variable_length_static_vector.jl")
 include("variable_length_indices.jl")
 
 include("cell_datastruct.jl")

@@ -3,6 +3,29 @@ using VoronoiMeshDataStruct
 using TensorsLiteGeometry
 using Test
 
+@testset "VariableLengthStaticVector" begin
+
+    @test_throws DomainError VariableLengthStaticVector{5}((1,0,2,3,5,0,0))
+
+    @test_throws DomainError VariableLengthStaticVector{3}(VariableLengthStaticVector((-1,2,3,5,0,0),4))
+
+    @test typeof(VariableLengthStaticVector((1.,2.,3.,4.,5.,0.,0.,0.),5)) === VariableLengthStaticVector{8,Float64}
+
+    a = VariableLengthStaticVector((1.,2.,3.,4.,5.,0.,0.,0.),5)
+
+    @test length(a) === 5
+    @test size(a) === (5,)
+
+    @test VoronoiMeshDataStruct.max_length(a) == 8
+    @test VoronoiMeshDataStruct.max_length(typeof(a)) == 8
+
+    @test collect(a) == [1., 2., 3., 4., 5.]
+
+    @test_throws BoundsError getindex(a,6) 
+
+    @test a[3] === 3.0
+end
+
 @testset "VariableLengthIndices" begin
 
     @test_throws DomainError VoronoiMeshDataStruct.VariableLengthIndices((1,0,2,3,5,0,0))
