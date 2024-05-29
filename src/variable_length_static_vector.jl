@@ -31,3 +31,21 @@ end
 
 @inline max_length(::VariableLengthStaticVector{N,T}) where {N,T} = N
 @inline max_length(::Type{<:VariableLengthStaticVector{N,T}}) where {N,T} = N
+
+function Base.map(f::F,a::VariableLengthStaticVector{N1,T1}) where {F<:Function,N1,T1}
+    Tf = Base.promote_op(f,T1)
+    l = length(a)
+    d = a.data
+    func = i -> (i <= l ? (@inbounds f(d[i])) : zero(Tf))
+    return VariableLengthStaticVector{N1,Tf}(ntuple(func,Val{N1}()),a.length)
+end
+
+function Base.map(f::F,a::VariableLengthStaticVector{N1,T1},b::VariableLengthStaticVector{N2,T2}) where {F<:Function,N1,T1,N2,T2}
+    Tf = Base.promote_op(f,T1,T2)
+    Nf = min(N1,N2)
+    l = min(length(a),length(b))
+    da = a.data
+    db = b.data
+    func = i -> (i <= l ? (@inbounds f(da[i], db[i])) : (zero(Tf)))
+    return VariableLengthStaticVector{Nf,Tf}(ntuple(func,Val{Nf}()),UInt(l))
+end

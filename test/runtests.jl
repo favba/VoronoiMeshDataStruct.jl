@@ -16,14 +16,17 @@ using Test
     @test length(a) === 5
     @test size(a) === (5,)
 
-    @test VoronoiMeshDataStruct.max_length(a) == 8
-    @test VoronoiMeshDataStruct.max_length(typeof(a)) == 8
+    @test max_length(a) == 8
+    @test max_length(typeof(a)) == 8
 
     @test collect(a) == [1., 2., 3., 4., 5.]
 
     @test_throws BoundsError getindex(a,6) 
 
     @test a[3] === 3.0
+
+    @test map(-,a) === VariableLengthStaticVector((-1.,-2.,-3.,-4.,-5.,0.,0.,0.),5)
+    @test map(+,a,a) === VariableLengthStaticVector((2.,4.,6.,8.,10.,0.,0.,0.),5)
 end
 
 function compare_weights_trisk(m::Matrix,v::Vector{<:VariableLengthStaticVector})
