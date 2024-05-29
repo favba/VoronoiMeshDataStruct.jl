@@ -27,6 +27,8 @@ using Test
 
     @test map(-,a) === VariableLengthStaticVector((-1.,-2.,-3.,-4.,-5.,0.,0.,0.),5)
     @test map(+,a,a) === VariableLengthStaticVector((2.,4.,6.,8.,10.,0.,0.,0.),5)
+    @test map(-,a,(1,2,3,4)) === VariableLengthStaticVector((0.0,0.0,0.0,0.0))
+    @test map(-,(1,2,3,4),a) === VariableLengthStaticVector((0.0,0.0,0.0,0.0))
 end
 
 function compare_weights_trisk(m::Matrix,v::Vector{<:VariableLengthStaticVector})

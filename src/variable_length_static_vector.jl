@@ -49,3 +49,6 @@ function Base.map(f::F,a::VariableLengthStaticVector{N1,T1},b::VariableLengthSta
     func = i -> (i <= l ? (@inbounds f(da[i], db[i])) : (zero(Tf)))
     return VariableLengthStaticVector{Nf,Tf}(ntuple(func,Val{Nf}()),UInt(l))
 end
+
+Base.map(f,a::Tuple,b::VariableLengthStaticVector) = map(f,VariableLengthStaticVector(a),b)
+Base.map(f,a::VariableLengthStaticVector,b::Tuple) = map(f,a,VariableLengthStaticVector(b))
