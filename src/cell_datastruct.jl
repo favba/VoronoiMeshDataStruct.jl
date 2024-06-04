@@ -1,11 +1,11 @@
 "Struct that stores indices of elements surrounding Cell (vertices, edges and neighboring cells)"
 struct CellConnectivity{MAX_N_EDGES,TI<:Integer}
     """Indices of vertices forming the cell"""
-    vertices::Vector{VariableLengthStaticVector{MAX_N_EDGES,TI}}
+    vertices::Vector{ImmutableVector{MAX_N_EDGES,TI}}
     """Indices of the edges forming the cell"""
-    edges::Vector{VariableLengthStaticVector{MAX_N_EDGES,TI}}
+    edges::Vector{ImmutableVector{MAX_N_EDGES,TI}}
     """Indices of cells surrounding the given cell"""
-    cells::Vector{VariableLengthStaticVector{MAX_N_EDGES,TI}}
+    cells::Vector{ImmutableVector{MAX_N_EDGES,TI}}
 end
 
 Base.getproperty(cell::CellConnectivity,s::Symbol) = _getproperty(cell,Val(s))

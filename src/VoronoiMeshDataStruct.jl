@@ -1,14 +1,13 @@
 module VoronoiMeshDataStruct
 
-using TensorsLite, TensorsLiteGeometry
+using TensorsLite, TensorsLiteGeometry, ImmutableVectors
 
-export VariableLengthStaticVector
 export CellConnectivity, CellBase, CellInfo
 export VertexConnectivity, VertexBase, VertexInfo
 export EdgeConnectivity, EdgeBase, EdgeVelocityReconstruction, EdgeInfo
 export VoronoiMesh
 
-export max_length, on_a_sphere, max_n_edges, max_n_edges_vel_reconstruction, float_precision, integer_precision
+export on_a_sphere, max_n_edges, max_n_edges_vel_reconstruction, float_precision, integer_precision
 
 export compute_edge_position, compute_edge_position!, compute_edge_position_periodic, compute_edge_position_periodic!
 export compute_edge_normals, compute_edge_normals!, compute_edge_normals_periodic, compute_edge_normals_periodic!
@@ -29,8 +28,6 @@ export create_cell_linesegments, create_cell_linesegments_periodic
 
 export graph_partition, find_obtuse_triangles
 export select_kite_area, periodic_edges_mask
-
-include("variable_length_static_vector.jl")
 
 include("cell_datastruct.jl")
 

@@ -39,9 +39,9 @@ struct EdgeVelocityReconstruction{MAX_N_EDGES,TI<:Integer,TF}
     """Number of edges involved in reconstruction of tangential velocity for an edge"""
     nEdges::Vector{TI}
     """IDs of edges involved in reconstruction of tangential velocity for an edge"""
-    indices::Vector{VariableLengthStaticVector{MAX_N_EDGES,TI}}
+    indices::Vector{ImmutableVector{MAX_N_EDGES,TI}}
     """Weights used in reconstruction of tangential velocity for an edge"""
-    weights::Vector{VariableLengthStaticVector{MAX_N_EDGES,TF}}
+    weights::Vector{ImmutableVector{MAX_N_EDGES,TF}}
 end
 
 max_n_edges_vel_reconstruction(::Type{<:EdgeVelocityReconstruction{N}}) where N = N

@@ -1,6 +1,6 @@
 module NCDatasetsExt
 
-using VoronoiMeshDataStruct, NCDatasets, TensorsLite, Zeros
+using VoronoiMeshDataStruct, NCDatasets, TensorsLite, Zeros, ImmutableVectors
 
 function _on_a_sphere(ncfile::NCDatasets.NCDataset)
     oas = lowercase(strip(ncfile.attrib["on_a_sphere"]))
@@ -12,9 +12,9 @@ function _on_a_sphere(ncfile::NCDatasets.NCDataset)
 end
 
 function construct_elementsOnElement(n::Val{maxEdges},elementsOnElementArray::AbstractMatrix{TE},nElemtensOnElement::AbstractVector{TI}) where {maxEdges,TE,TI}
-    elementsOnElement = Vector{VariableLengthStaticVector{maxEdges,TE}}(undef,size(elementsOnElementArray,2))
+    elementsOnElement = Vector{ImmutableVector{maxEdges,TE}}(undef,size(elementsOnElementArray,2))
     @inbounds for k in axes(elementsOnElementArray,2)
-        elementsOnElement[k] = VariableLengthStaticVector{maxEdges}(ntuple(i->(@inbounds elementsOnElementArray[i,k]),n),nElemtensOnElement[k])
+        elementsOnElement[k] = ImmutableVector{maxEdges}(ntuple(i->(@inbounds elementsOnElementArray[i,k]),n),nElemtensOnElement[k])
     end
     return elementsOnElement
 end
