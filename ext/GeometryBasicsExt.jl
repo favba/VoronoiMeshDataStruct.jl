@@ -2,7 +2,7 @@ module GeometryBasicsExt
 
 using VoronoiMeshDataStruct
 using TensorsLite: Vec, norm
-using TensorsLiteGeometry
+using TensorsLiteGeometry, ImmutableVectors
 using GeometryBasics: Polygon, Point2f, LineString, Line, TupleView
 
 const PolType = Polygon{2, Float32, Point2f, LineString{2, Float32, Point2f, Base.ReinterpretArray{Line{2, Float32}, 1, Tuple{Point2f, Point2f}, TupleView{Tuple{Point2f, Point2f}, 2, 1, Vector{Point2f}}, false}}, Vector{LineString{2, Float32, Point2f, Base.ReinterpretArray{Line{2, Float32}, 1, Tuple{Point2f, Point2f}, TupleView{Tuple{Point2f, Point2f}, 2, 1, Vector{Point2f}}, false}}}}
@@ -10,7 +10,7 @@ const PolType = Polygon{2, Float32, Point2f, LineString{2, Float32, Point2f, Bas
 function VoronoiMeshDataStruct.create_cells_polygons_periodic(vert_pos,cell_pos,verticesOnCell,x_period,y_period)
 
     cell_polygons = Vector{PolType}(undef,length(cell_pos))
-    local_vertices = Vector{Point2f}(undef,VoronoiMeshDataStruct.max_length(eltype(verticesOnCell)))
+    local_vertices = Vector{Point2f}(undef,max_length(eltype(verticesOnCell)))
     @inbounds for i in eachindex(cell_pos)
         cpos = cell_pos[i]
         l = 0
