@@ -5,7 +5,7 @@ end
 function compute_edge_position_periodic!(epos,cpos,cellsOnEdge,xp::Number,yp::Number)
     check_sizes(size(cellsOnEdge),size(epos))
 
-    @inbounds for i in eachindex(cellsOnEdge)
+    @inbounds Threads.@threads for i in eachindex(cellsOnEdge)
         ic1,ic2 = cellsOnEdge[i]
         cpos2 = cpos[ic2]
         cpos1 = closest(cpos2,cpos[ic1],xp,yp)
@@ -32,7 +32,7 @@ compute_edge_position!(mesh::VoronoiMesh) = compute_edge_position!(mesh.edges.po
 function compute_edge_normals_periodic!(n,cpos,cellsOnEdge,xp::Number,yp::Number)
     check_sizes(size(cellsOnEdge),size(n))
 
-    @inbounds for i in eachindex(cellsOnEdge)
+    @inbounds Threads.@threads for i in eachindex(cellsOnEdge)
         ic1,ic2 = cellsOnEdge[i]
         cpos2 = cpos[ic2]
         cpos1 = closest(cpos2,cpos[ic1],xp,yp)
@@ -50,7 +50,7 @@ compute_edge_normals!(n,mesh::VoronoiMesh{false}) = compute_edge_normals!(n,mesh
 function compute_edge_normals_on_sphere!(n,cpos,cellsOnEdge)
     check_sizes(size(cellsOnEdge),size(n))
 
-    @inbounds for i in eachindex(cellsOnEdge)
+    @inbounds Threads.@threads for i in eachindex(cellsOnEdge)
         ic1,ic2 = cellsOnEdge[i]
         n[i] = normalize(cpos[ic2] - cpos[ic1])
     end
@@ -90,7 +90,7 @@ end
 function compute_area_triangles_periodic!(output,cpos,cellsOnVertex,xp::Number,yp::Number)
     check_sizes(size(cellsOnVertex),size(output))
 
-    @inbounds for v in eachindex(cellsOnVertex)
+    @inbounds Threads.@threads for v in eachindex(cellsOnVertex)
         c1,c2,c3 = cellsOnVertex[v]
         c1_pos = cpos[c1]
         c2_pos = closest(c1_pos,cpos[c2],xp,yp)
@@ -125,7 +125,7 @@ end
 function compute_kite_areas_periodic!(output,cpos,vpos,cellsOnVertex,xp,yp)
     check_sizes(size(cellsOnVertex),size(output))
 
-    @inbounds for v in eachindex(cellsOnVertex)
+    @inbounds Threads.@threads for v in eachindex(cellsOnVertex)
         v_pos = vpos[v]
         c1,c2,c3 = cellsOnVertex[v]
         c1_pos = closest(v_pos,cpos[c1],xp,yp)
@@ -161,7 +161,7 @@ compute_kite_areas(mesh::VoronoiMesh{false}) = compute_kite_areas(mesh.vertices.
 function compute_area_cells_periodic!(output,vpos,verticesOnCell,xp::Number,yp::Number)
     check_sizes(size(verticesOnCell),size(output))
 
-    @inbounds for c in eachindex(verticesOnCell)
+    @inbounds Threads.@threads for c in eachindex(verticesOnCell)
         output[c] = area(vpos,verticesOnCell[c],xp,yp)
     end
     return output
@@ -192,7 +192,7 @@ end
 function compute_dcEdge_periodic!(output,cpos,cellsOnEdge,xp::Number,yp::Number)
     check_sizes(size(cellsOnEdge),size(output))
 
-    @inbounds for e in eachindex(cellsOnEdge)
+    @inbounds Threads.@threads for e in eachindex(cellsOnEdge)
         c1,c2 = cellsOnEdge[e]
         c1pos = cpos[c1]
         c2pos = closest(c1pos,cpos[c2],xp,yp)
@@ -226,7 +226,7 @@ end
 function compute_dvEdge_periodic!(output,vpos,verticesOnEdge,xp::Number,yp::Number)
     check_sizes(size(verticesOnEdge),size(output))
 
-    @inbounds for e in eachindex(verticesOnEdge)
+    @inbounds Threads.@threads for e in eachindex(verticesOnEdge)
         v1,v2 = verticesOnEdge[e]
         v1pos = vpos[v1]
         v2pos = closest(v1pos,vpos[v2],xp,yp)
@@ -260,7 +260,7 @@ end
 function compute_angleEdge_periodic!(output,cpos,cellsOnEdge,xp::Number,yp::Number)
     check_sizes(size(cellsOnEdge),size(output))
 
-    @inbounds for i in eachindex(cellsOnEdge)
+    @inbounds Threads.@threads for i in eachindex(cellsOnEdge)
         ic1,ic2 = cellsOnEdge[i]
         cpos2 = cpos[ic2]
         cpos1 = closest(cpos2,cpos[ic1],xp,yp)
@@ -338,7 +338,7 @@ end
 function compute_weightsOnEdge_trisk!(weightsOnEdge,verticesOnEdge,cellsOnEdge,edgesOnEdge,dcEdge,dvEdge,kiteAreasOnVertex,cellsOnVertex,nEdgesOnCell,areaCell)
     check_sizes((max_length(eltype(edgesOnEdge)),length(edgesOnEdge)),size(weightsOnEdge))
 
-    for e in eachindex(edgesOnEdge)
+    @inbounds Threads.@threads for e in eachindex(edgesOnEdge)
         c1,c2 = cellsOnEdge[e]
         inds_e = edgesOnEdge[e]
         inv_de = inv(dcEdge[e])
