@@ -29,6 +29,10 @@ export create_cell_linesegments, create_cell_linesegments_periodic
 export graph_partition, find_obtuse_triangles
 export select_kite_area, periodic_edges_mask
 
+export @parallel
+
+include("utils_pre.jl")
+
 include("cell_datastruct.jl")
 
 include("vertices_datastruct.jl")

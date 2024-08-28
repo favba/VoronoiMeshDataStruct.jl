@@ -19,7 +19,8 @@ graph_partition(mesh::VoronoiMesh) = graph_partition(mesh.cells,mesh.edges)
 function find_obtuse_triangles_periodic(cpos,cellsOnVertex,xp::Number,yp::Number)
     r = Int[]
     lk = ReentrantLock()
-    @inbounds Threads.@threads for v in eachindex(cellsOnVertex)
+    @parallel for v in eachindex(cellsOnVertex)
+        @inbounds begin
         c1,c2,c3 = cellsOnVertex[v]
         c1pos = cpos[c1]
         c2pos = closest(c1pos,cpos[c2],xp,yp)
@@ -29,6 +30,7 @@ function find_obtuse_triangles_periodic(cpos,cellsOnVertex,xp::Number,yp::Number
                 push!(r,v)
             end
         end
+        end #inbounds
     end
     return r
 end
