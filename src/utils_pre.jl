@@ -1,5 +1,5 @@
 """
-Works just like `OhMyThreads.@tasks`, but runs serially if `Threads.nthreads()==1` to avoid task creation overhead.
+Works just like `Threads.@threads`, but runs serially if `Threads.nthreads()==1` to avoid task creation overhead.
 """
 macro parallel(ex)
     pex = quote
@@ -7,7 +7,7 @@ macro parallel(ex)
             if $Threads.nthreads() == 1
                 $(ex)
             else
-                $OhMyThreads.@tasks $(ex)
+                $Threads.@threads $(ex)
             end
         end
     end
