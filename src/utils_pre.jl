@@ -1,5 +1,5 @@
 """
-Works just like `Threads.@threads :static`, but runs serially if `Threads.nthreads()==1` to avoid task creation overhead.
+Works just like `OhMyThreads.@tasks`, but runs serially if `Threads.nthreads()==1` to avoid task creation overhead.
 """
 macro parallel(ex)
     pex = quote
@@ -7,7 +7,7 @@ macro parallel(ex)
             if $Threads.nthreads() == 1
                 $(ex)
             else
-                $Threads.@threads :static $(ex)
+                $OhMyThreads.@tasks $(ex)
             end
         end
     end

@@ -1,6 +1,6 @@
 module VoronoiMeshDataStruct
 
-using TensorsLite, TensorsLiteGeometry, ImmutableVectors
+using TensorsLite, TensorsLiteGeometry, ImmutableVectors, OhMyThreads
 
 export CellConnectivity, CellBase, CellInfo
 export VertexConnectivity, VertexBase, VertexInfo
