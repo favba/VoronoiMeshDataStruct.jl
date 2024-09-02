@@ -31,6 +31,43 @@ compute_edge_position!(edges::EdgeBase{false},cells::CellBase{false},xp::Number,
 compute_edge_position(mesh::VoronoiMesh{false}) = compute_edge_position(mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 compute_edge_position!(mesh::VoronoiMesh) = compute_edge_position!(mesh.edges.position,mesh)
 
+function compute_edge_tangents_periodic!(t,vpos,verticesOnEdge,xp::Number,yp::Number)
+    check_sizes(size(verticesOnEdge),size(t))
+
+    @parallel for i in eachindex(verticesOnEdge)
+        @inbounds begin
+        iv1,iv2 = verticesOnEdge[i]
+        vpos2 = vpos[iv2]
+        vpos1 = closest(vpos2,vpos[iv1],xp,yp)
+        t[i] = normalize(vpos2 - vpos1)
+        end
+    end
+
+    return t
+end
+
+compute_edge_tangents!(t,edges::EdgeBase{false},vertices::VertexBase{false},xp::Number,yp::Number) = compute_edge_tangents_periodc!(t,vertices.position,edges.indices.vertices,xp,yp)
+
+compute_edge_tangents!(t,mesh::VoronoiMesh{false}) = compute_edge_tangents!(t,mesh.edges.base,mesh.vertices.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+
+function compute_edge_tangents_periodic(vpos,verticesOnEdge,xp::Number,yp::Number)
+    t = similar(vpos,size(verticesOnEdge))
+    return compute_edge_tangents_periodic!(t,vpos,verticesOnEdge,xp,yp)
+end
+
+compute_edge_tangents(edges::EdgeBase{false},vertices::VertexBase{false},xp::Number,yp::Number) = compute_edge_tangents_periodic(vertices.position,edges.indices.vertices,xp,yp)
+
+compute_edge_tangents(mesh::VoronoiMesh{false}) = compute_edge_tangents(mesh.edges.base,mesh.vertices.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+
+function compute_edge_tangents!(mesh::VoronoiMesh)
+    if isdefined(mesh.edges,:tangentialVectors)
+        compute_edge_tangents!(mesh.edges.tangentialVectors,mesh)
+    else
+        mesh.edges.tangentialVectors = compute_edge_tangents(mesh)
+    end
+    return mesh.edges.tangentialVectors
+end
+
 function compute_edge_normals_periodic!(n,cpos,cellsOnEdge,xp::Number,yp::Number)
     check_sizes(size(cellsOnEdge),size(n))
 

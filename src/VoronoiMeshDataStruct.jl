@@ -11,6 +11,7 @@ export on_a_sphere, max_n_edges, max_n_edges_vel_reconstruction, float_precision
 
 export compute_edge_position, compute_edge_position!, compute_edge_position_periodic, compute_edge_position_periodic!
 export compute_edge_normals, compute_edge_normals!, compute_edge_normals_periodic, compute_edge_normals_periodic!
+export compute_edge_tangents, compute_edge_tangents!, compute_edge_tangents_periodic, compute_edge_tangents_periodic!
 export compute_area_triangles, compute_area_triangles!, compute_kite_areas, compute_kite_areas!, compute_area_cells, compute_area_cells!
 export compute_area_triangles_periodic, compute_area_triangles_periodic!
 export compute_area_cells_periodic, compute_area_cells_periodic!

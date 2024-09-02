@@ -69,6 +69,8 @@ mutable struct EdgeInfo{S,N,TI<:Integer, TF<:Real,Tz<:Number}
     bdyMask::Vector{TI}
     """Cartesian components of the vector normal to an edge and tangential to the surface of the sphere"""
     normalVectors::TensorsLite.VecMaybe2DxyArray{TF,Tz,1}
+    """Cartesian components of the vector tangential to an edge and tangential to the surface of the sphere"""
+    tangentialVectors::TensorsLite.VecMaybe2DxyArray{TF,Tz,1}
     """Weights for cell-centered second derivative, normal to edge, for transport scheme"""
     derivTwo::Array{TF,3}
 
