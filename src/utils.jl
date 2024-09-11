@@ -56,4 +56,32 @@ function periodic_edges_mask(dc,cellsOnEdge,c_pos)
     return mask
 end
 
-periodic_edges_mask(mesh::VoronoiMesh) = periodic_edges_mask(mesh.edges.dc, mesh.edges.indices.cells, mesh.cells.position)
+periodic_edges_mask(mesh::VoronoiMesh{false}) = periodic_edges_mask(mesh.edges.dc, mesh.edges.indices.cells, mesh.cells.position)
+
+function periodic_edges_mask(mesh::VoronoiMesh{true})
+    a = BitArray(mesh.edges.n)
+    a .= true
+    return a
+end
+
+"""
+    periodic_vertices_mask(mesh::VoronoiMesh)
+
+Returns a BitArray that masks vertices that belong to a periodic edge (interior vertices = true, boundary vertices = false).
+"""
+function periodic_vertices_mask(edgesOnVertex, mask_edges)
+    mask = BitArray(undef,length(edgesOnVertex))
+    @inbounds for v in eachindex(edgesOnVertex)
+        e1, e2, e3 = edgesOnVertex[v]
+        mask[v] = mask_edges[e1] && mask_edges[e2] && mask_edges[e3]
+    end
+    return mask
+end
+
+periodic_vertices_mask(mesh::VoronoiMesh{false}) = periodic_vertices_mask(mesh.edgesOnVertex, periodic_edges_mask(mesh))
+
+function periodic_vertices_mask(mesh::VoronoiMesh{true})
+    a = BitArray(mesh.vertices.n)
+    a .= true
+    return a
+end
