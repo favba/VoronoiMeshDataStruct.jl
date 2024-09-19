@@ -2,7 +2,7 @@ using NCDatasets
 using VoronoiMeshDataStruct
 using TensorsLiteGeometry, ImmutableVectors
 using Test
-using TensorsLite
+using TensorsLite, LinearAlgebra
 
 function compare_weights_trisk(m::Matrix,v::Vector{<:ImmutableVector})
     r = true
@@ -34,4 +34,16 @@ end
     @test all(x->(isapprox(0.0,x[1]⋅x[2],atol=50*eps())), zip(compute_edge_tangents(mesh), compute_edge_normals(mesh)))
 
     @test length(find_obtuse_triangles(mesh)) == 0
+end
+
+@testset "Fields Creation Spherical Mesh" begin
+    mesh = NCDataset("x1.40962.init.nc") do f; VoronoiMesh(f) ;end
+    R = mesh.attributes[:sphere_radius]
+
+    compute_edge_tangents!(mesh)
+    compute_edge_normals!(mesh)
+    epos = R .* cross.(mesh.edges.normalVectors, mesh.edges.tangentialVectors)
+
+    @test mapreduce(isapprox, &,  epos, mesh.edges.position)
+
 end

@@ -46,18 +46,41 @@ function compute_edge_tangents_periodic!(t,vpos,verticesOnEdge,xp::Number,yp::Nu
     return t
 end
 
-compute_edge_tangents!(t,edges::EdgeBase{false},vertices::VertexBase{false},xp::Number,yp::Number) = compute_edge_tangents_periodc!(t,vertices.position,edges.indices.vertices,xp,yp)
+function compute_edge_tangents!(t,epos, vpos, verticesOnEdge)
+    check_sizes(size(verticesOnEdge),size(t))
 
+    @parallel for i in eachindex(verticesOnEdge)
+        @inbounds begin
+        _,iv2 = verticesOnEdge[i]
+        vp = vpos[iv2]
+        ep = epos[i]
+        t[i] = normalize(ep × (vp × ep))
+        end
+    end
+
+    return t
+end
+
+compute_edge_tangents!(t,edges::EdgeBase{false},vertices::VertexBase{false},xp::Number,yp::Number) = compute_edge_tangents_periodc!(t,vertices.position,edges.indices.vertices,xp,yp)
 compute_edge_tangents!(t,mesh::VoronoiMesh{false}) = compute_edge_tangents!(t,mesh.edges.base,mesh.vertices.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+
+compute_edge_tangents!(t,edges::EdgeBase{true},vertices::VertexBase{true}) = compute_edge_tangents!(t,edges.position, vertices.position, edges.indices.vertices)
+compute_edge_tangents!(t,mesh::VoronoiMesh{true}) = compute_edge_tangents!(t,mesh.edges.base,mesh.vertices.base)
 
 function compute_edge_tangents_periodic(vpos,verticesOnEdge,xp::Number,yp::Number)
     t = similar(vpos,size(verticesOnEdge))
     return compute_edge_tangents_periodic!(t,vpos,verticesOnEdge,xp,yp)
 end
+function compute_edge_tangents(epos, vpos,verticesOnEdge)
+    t = similar(vpos,size(verticesOnEdge))
+    return compute_edge_tangents!(t,epos, vpos,verticesOnEdge)
+end
 
 compute_edge_tangents(edges::EdgeBase{false},vertices::VertexBase{false},xp::Number,yp::Number) = compute_edge_tangents_periodic(vertices.position,edges.indices.vertices,xp,yp)
-
 compute_edge_tangents(mesh::VoronoiMesh{false}) = compute_edge_tangents(mesh.edges.base,mesh.vertices.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
+
+compute_edge_tangents(edges::EdgeBase{true},vertices::VertexBase{true}) = compute_edge_tangents(edges.position, vertices.position,edges.indices.vertices)
+compute_edge_tangents(mesh::VoronoiMesh{true}) = compute_edge_tangents(mesh.edges.base,mesh.vertices.base)
 
 function compute_edge_tangents!(mesh::VoronoiMesh)
     if isdefined(mesh.edges,:tangentialVectors)
@@ -83,12 +106,7 @@ function compute_edge_normals_periodic!(n,cpos,cellsOnEdge,xp::Number,yp::Number
     return n
 end
 
-compute_edge_normals!(n,edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_edge_normals_periodic!(n,cells.position,edges.indices.cells,xp,yp)
-
-compute_edge_normals!(n,mesh::VoronoiMesh{false}) = compute_edge_normals!(n,mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
-
-#Since the edges are always equidistant to both cell positions, the vector connecting them will be parallel to the arc tangent at the edge, right??
-function compute_edge_normals_on_sphere!(n,cpos,cellsOnEdge)
+function compute_edge_normals(n,cpos,cellsOnEdge)
     check_sizes(size(cellsOnEdge),size(n))
 
     @parallel for i in eachindex(cellsOnEdge)
@@ -97,29 +115,30 @@ function compute_edge_normals_on_sphere!(n,cpos,cellsOnEdge)
         n[i] = normalize(cpos[ic2] - cpos[ic1])
         end
     end
+
     return n
 end
 
-compute_edge_normals!(n,edges::EdgeBase{true},cells::CellBase{true}) = compute_edge_normals_on_sphere!(n,cells.position,edges.indices.cells)
+compute_edge_normals!(n,edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_edge_normals_periodic!(n,cells.position,edges.indices.cells,xp,yp)
+compute_edge_normals!(n,mesh::VoronoiMesh{false}) = compute_edge_normals!(n,mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
+compute_edge_normals!(n,edges::EdgeBase{true},cells::CellBase{true}) = compute_edge_normals(n,cells.position,edges.indices.cells)
 compute_edge_normals!(n,mesh::VoronoiMesh{true}) = compute_edge_normals!(n,mesh.edges.base,mesh.cells.base)
 
 function compute_edge_normals_periodic(cpos,cellsOnEdge,xp::Number,yp::Number)
     n = similar(cpos,size(cellsOnEdge))
     return compute_edge_normals_periodic!(n,cpos,cellsOnEdge,xp,yp)
 end
-
 compute_edge_normals(edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_edge_normals_periodic(cells.position,edges.indices.cells,xp,yp)
-
 compute_edge_normals(mesh::VoronoiMesh{false}) = compute_edge_normals(mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
-function compute_edge_normals_on_sphere(cpos,cellsOnEdge)
+function compute_edge_normals(cpos,cellsOnEdge)
     n = similar(cpos,size(cellsOnEdge))
-    return compute_edge_normals_on_sphere!(n,cpos,cellsOnEdge)
+    return compute_edge_normals!(n,cpos,cellsOnEdge)
 end
 
-compute_edge_normals(edges::EdgeBase{true},cells::CellBase{true}) = compute_edge_normals_on_sphere(cells.position,edges.indices.cells)
-compute_edge_normals(mesh::VoronoiMesh{true}) = compute_edge_normals_on_sphere(mesh.cells.position,mesh.edges.indices.cells)
+compute_edge_normals(edges::EdgeBase{true},cells::CellBase{true}) = compute_edge_normals(cells.position,edges.indices.cells)
+compute_edge_normals(mesh::VoronoiMesh{true}) = compute_edge_normals(mesh.cells.position,mesh.edges.indices.cells)
 
 function compute_edge_normals!(mesh::VoronoiMesh)
     if isdefined(mesh.edges,:normalVectors)
