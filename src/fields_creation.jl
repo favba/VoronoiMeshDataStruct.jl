@@ -61,7 +61,7 @@ function compute_edge_tangents!(t,epos, vpos, verticesOnEdge)
     return t
 end
 
-compute_edge_tangents!(t,edges::EdgeBase{false},vertices::VertexBase{false},xp::Number,yp::Number) = compute_edge_tangents_periodc!(t,vertices.position,edges.indices.vertices,xp,yp)
+compute_edge_tangents!(t,edges::EdgeBase{false},vertices::VertexBase{false},xp::Number,yp::Number) = compute_edge_tangents_periodic!(t,vertices.position,edges.indices.vertices,xp,yp)
 compute_edge_tangents!(t,mesh::VoronoiMesh{false}) = compute_edge_tangents!(t,mesh.edges.base,mesh.vertices.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
 compute_edge_tangents!(t,edges::EdgeBase{true},vertices::VertexBase{true}) = compute_edge_tangents!(t,edges.position, vertices.position, edges.indices.vertices)
