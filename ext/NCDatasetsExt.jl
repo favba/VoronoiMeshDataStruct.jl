@@ -256,11 +256,18 @@ precompile(VoronoiMeshDataStruct.EdgeConnectivity,(NCDatasets.NCDataset{Nothing,
 function VoronoiMeshDataStruct.EdgeBase(ncfile::NCDatasets.NCDataset)
     indices = EdgeConnectivity(ncfile)
 
-    onSphere, on_sphere = _on_a_sphere(ncfile)
+    _, on_sphere = _on_a_sphere(ncfile)
 
-    position = on_sphere ? VecArray(x=ncfile["xEdge"][:],y=ncfile["yEdge"][:],z=ncfile["zEdge"][:]) : VecArray(x=ncfile["xEdge"][:],y=ncfile["yEdge"][:])
+    x = (ncfile["xEdge"][:])::Vector{Float64}
+    y = (ncfile["yEdge"][:])::Vector{Float64}
 
-    return EdgeBase(length(position.x),indices,position,onSphere)
+    if on_sphere
+        position = VecArray(x = x, y = y, z = (ncfile["zEdge"][:])::Vector{Float64})
+        return EdgeBase(length(x), indices, position, Val{true}())
+    else
+        position_p = VecArray(x = x, y = y)
+        return EdgeBase(length(x), indices, position_p, Val{false}())
+    end
 end
 
 precompile(VoronoiMeshDataStruct.EdgeBase,(NCDatasets.NCDataset{Nothing,Missing},))
