@@ -11,24 +11,33 @@ function _on_a_sphere(ncfile::NCDatasets.NCDataset)
     end
 end
 
-function construct_elementsOnElement(n::Val{maxEdges},elementsOnElementArray::AbstractMatrix{TE},nElemtensOnElement::AbstractVector{TI}) where {maxEdges,TE,TI}
-    elementsOnElement = Vector{ImmutableVector{maxEdges,TE}}(undef,size(elementsOnElementArray,2))
-    @inbounds for k in axes(elementsOnElementArray,2)
-        elementsOnElement[k] = ImmutableVector{maxEdges}(ntuple(i->(@inbounds elementsOnElementArray[i,k]),n),nElemtensOnElement[k])
+function construct_elementsOnElement!(elementsOnElement::Vector{ImmutableVector{maxEdges,TE}}, elementsOnElementArray::AbstractMatrix{TE}, nElemtensOnElement::AbstractVector{TI}) where {maxEdges,TE,TI}
+    n = Val{maxEdges}()
+    @parallel for k in axes(elementsOnElementArray,2)
+        @inbounds elementsOnElement[k] = ImmutableVector{maxEdges}(ntuple(i->(@inbounds elementsOnElementArray[i,k]), n),nElemtensOnElement[k])
     end
     return elementsOnElement
 end
 
+function construct_elementsOnElement(n::Val{maxEdges},elementsOnElementArray::AbstractMatrix{TE},nElemtensOnElement::AbstractVector{TI}) where {maxEdges,TE,TI}
+    elementsOnElement = Vector{ImmutableVector{maxEdges,TE}}(undef,size(elementsOnElementArray,2))
+    return construct_elementsOnElement!(elementsOnElement, elementsOnElementArray, nElemtensOnElement)
+end
+
 function VoronoiMeshDataStruct.CellConnectivity(me::Val{maxEdges},nEdgesOnCell::AbstractVector{TI},ncfile::NCDatasets.NCDataset) where {maxEdges,TI}
-    verticesOnCellArray = ncfile["verticesOnCell"][:,:]
-    verticesOnCell = construct_elementsOnElement(me,verticesOnCellArray,nEdgesOnCell)
+    verticesOnCellArray = (ncfile["verticesOnCell"][:,:])::Matrix{Int32}
+    verticesOnCell = Vector{ImmutableVector{maxEdges, TI}}(undef, size(verticesOnCellArray, 2))
+    t1 = Threads.@spawn construct_elementsOnElement!($verticesOnCell, $verticesOnCellArray, $nEdgesOnCell)
 
-    edgesOnCellArray = ncfile["edgesOnCell"][:,:]
-    edgesOnCell = construct_elementsOnElement(me,edgesOnCellArray,nEdgesOnCell)
+    edgesOnCellArray = (ncfile["edgesOnCell"][:,:])::Matrix{Int32}
+    edgesOnCell = Vector{ImmutableVector{maxEdges, TI}}(undef, size(edgesOnCellArray, 2))
+    t2 = Threads.@spawn construct_elementsOnElement!($edgesOnCell, $edgesOnCellArray, $nEdgesOnCell)
 
-    cellsOnCellArray = ncfile["cellsOnCell"][:,:]
+    cellsOnCellArray = (ncfile["cellsOnCell"][:,:])::Matrix{Int32}
     cellsOnCell = construct_elementsOnElement(me,cellsOnCellArray,nEdgesOnCell)
 
+    wait(t1)
+    wait(t2)
     return CellConnectivity(verticesOnCell,edgesOnCell,cellsOnCell)
 end
 
@@ -44,15 +53,30 @@ end
 function VoronoiMeshDataStruct.CellConnectivity(ncfile::NCDatasets.NCDataset)
     nEdgesOnCell = ncfile["nEdgesOnCell"][:]::Vector{Int32}
     maxEdges = Int(maximum(nEdgesOnCell))
-    
-    return CellConnectivity(Val(maxEdges),nEdgesOnCell,ncfile)
+
+    #Avoid dynamic dispatch for most common cases
+    if maxEdges == 6
+        return CellConnectivity(Val{6}(), nEdgesOnCell,ncfile)
+    elseif maxEdges == 7
+        return CellConnectivity(Val{7}(), nEdgesOnCell,ncfile)
+    elseif maxEdges == 8
+        return CellConnectivity(Val{8}(), nEdgesOnCell,ncfile)
+    elseif maxEdges == 9
+        return CellConnectivity(Val{9}(), nEdgesOnCell,ncfile)
+    elseif maxEdges == 10
+        return CellConnectivity(Val{10}(), nEdgesOnCell,ncfile)
+    else
+        return CellConnectivity(Val(maxEdges), nEdgesOnCell, ncfile)
+    end
 end
 
 precompile(VoronoiMeshDataStruct.CellConnectivity,(NCDatasets.NCDataset{Nothing,Missing},))
 
 function VoronoiMeshDataStruct.CellBase(onSphere::Val{on_sphere},mE::Val{maxEdges},nEdges,ncfile::NCDatasets.NCDataset) where {on_sphere,maxEdges}
     indices = CellConnectivity(mE,nEdges,ncfile)
-    position = on_sphere ? VecArray(x=ncfile["xCell"][:], y=ncfile["yCell"][:], z=ncfile["zCell"][:]) : VecArray(x=ncfile["xCell"][:], y=ncfile["yCell"][:])
+    x = (ncfile["xCell"][:])::Vector{Float64}
+    y = (ncfile["yCell"][:])::Vector{Float64}
+    position = on_sphere ? VecArray(x = x, y = y, z=(ncfile["zCell"][:])::Vector{Float64}) : VecArray(x = x, y = y)
 
     return CellBase(length(nEdges),indices,nEdges,position,onSphere)
 end
@@ -66,9 +90,37 @@ end
 function VoronoiMeshDataStruct.CellBase(ncfile::NCDatasets.NCDataset)
     nEdges = ncfile["nEdgesOnCell"][:]::Vector{Int32}
     maxEdges = Int(maximum(nEdges))
-    onSphere, _ = _on_a_sphere(ncfile)
+    onSphere, on_sphere = _on_a_sphere(ncfile)
+
+    #Avoid dynamic dispatch for most common cases
+    if on_sphere
+        if maxEdges == 6
+            return CellBase(Val{true}(), Val{6}(), nEdges, ncfile)
+        elseif maxEdges == 7
+            return CellBase(Val{true}(), Val{7}(), nEdges, ncfile)
+        elseif maxEdges == 8
+            return CellBase(Val{true}(), Val{8}(), nEdges, ncfile)
+        elseif maxEdges == 9
+            return CellBase(Val{true}(), Val{9}(), nEdges, ncfile)
+        elseif maxEdges == 10
+            return CellBase(Val{true}(), Val{10}(), nEdges, ncfile)
+        end
+    else
+        if maxEdges == 6
+            return CellBase(Val{false}(), Val{6}(), nEdges, ncfile)
+        elseif maxEdges == 7
+            return CellBase(Val{false}(), Val{7}(), nEdges, ncfile)
+        elseif maxEdges == 8
+            return CellBase(Val{false}(), Val{8}(), nEdges, ncfile)
+        elseif maxEdges == 9
+            return CellBase(Val{false}(), Val{9}(), nEdges, ncfile)
+        elseif maxEdges == 10
+            return CellBase(Val{false}(), Val{10}(), nEdges, ncfile)
+        end
+    end
     return CellBase(onSphere,Val(maxEdges),nEdges,ncfile)
 end
+
 precompile(VoronoiMeshDataStruct.CellBase,(NCDatasets.NCDataset{Nothing,Missing},))
 
 const cell_info_vectors = (longitude="lonCell", latitude="latCell",
@@ -149,11 +201,18 @@ precompile(VoronoiMeshDataStruct.VertexConnectivity,(NCDatasets.NCDataset{Nothin
 function VoronoiMeshDataStruct.VertexBase(ncfile::NCDatasets.NCDataset)
     indices = VertexConnectivity(ncfile)
 
-    onSphere, on_sphere = _on_a_sphere(ncfile)
+    _, on_sphere = _on_a_sphere(ncfile)
+    
+    x = (ncfile["xVertex"][:])::Vector{Float64}
+    y = (ncfile["yVertex"][:])::Vector{Float64}
 
-    position = on_sphere ? VecArray(x=ncfile["xVertex"][:],y=ncfile["yVertex"][:],z=ncfile["zVertex"][:]) : VecArray(x=ncfile["xVertex"][:],y=ncfile["yVertex"][:])
-
-    return VertexBase(length(position.x),indices,position,onSphere)
+    if on_sphere
+        position = VecArray(x = x, y = y, z = (ncfile["zVertex"][:])::Vector{Float64})
+        return VertexBase(length(position.x), indices, position, Val{true}())
+    else
+        position_p = VecArray(x = x, y = y)
+        return VertexBase(length(position_p.x), indices, position_p, Val{false}())
+    end
 end
 
 precompile(VoronoiMeshDataStruct.VertexBase,(NCDatasets.NCDataset{Nothing,Missing},))
