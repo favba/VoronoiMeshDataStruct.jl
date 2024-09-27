@@ -1,5 +1,5 @@
 """
-Works just like `Threads.@threads`, but runs serially if `Threads.nthreads()==1` to avoid task creation overhead.
+Works just like `Threads.@threads` (except you can't interpolate values with `\$`), but runs serially if `Threads.nthreads()==1` to avoid task creation overhead.
 """
 macro parallel(ex)
     pex = quote
