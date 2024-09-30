@@ -26,6 +26,10 @@ on_a_sphere(::Type{<:EdgeBase{B}}) where B = B
 integer_precision(::Type{<:EdgeBase{B,T}}) where {B,T} = T
 float_precision(::Type{<:EdgeBase{B,T,TF}}) where {B,T,TF} = TF
 
+for fun in (:on_a_sphere, :integer_precision, :float_precision)
+    @eval $fun(::T) where {T <: EdgeBase} = $fun(T)
+end
+
 Base.getproperty(edge::EdgeBase,s::Symbol) = _getproperty(edge,Val(s))
 _getproperty(edge::EdgeBase,::Val{s}) where s = getfield(edge,s)
 _getproperty(edge::EdgeBase,::Val{:nEdges}) = getfield(edge,:n)
@@ -84,6 +88,10 @@ on_a_sphere(::Type{<:EdgeInfo{B}}) where B = B
 max_n_edges_vel_reconstruction(::Type{<:EdgeInfo{B,N}}) where {B,N} = N
 integer_precision(::Type{<:EdgeInfo{B,N,T}}) where {B,N,T} = T
 float_precision(::Type{<:EdgeInfo{B,N,T,TF}}) where {B,N,T,TF} = TF
+
+for fun in (:on_a_sphere, :max_n_edges_vel_reconstruction, :integer_precision, :float_precision)
+    @eval $fun(::T) where {T <: EdgeInfo} = $fun(T)
+end
 
 Base.getproperty(edge::EdgeInfo,s::Symbol) = _getproperty(edge,Val(s))
 _getproperty(edge::EdgeInfo,::Val{s}) where s = getfield(edge,s)

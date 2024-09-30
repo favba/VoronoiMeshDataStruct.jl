@@ -56,6 +56,10 @@ on_a_sphere(::Type{<:VertexInfo{B}}) where B = B
 integer_precision(::Type{<:VertexInfo{B,T}}) where {B,T} = T
 float_precision(::Type{<:VertexInfo{B,T,TF}}) where {B,T,TF} = TF
 
+for fun in (:on_a_sphere, :integer_precision, :float_precision)
+    @eval $fun(::T) where {T <: Union{<:VertexBase, <:VertexInfo}} = $fun(T)
+end
+
 Base.getproperty(vertex::VertexInfo,s::Symbol) = _getproperty(vertex,Val(s))
 
 _getproperty(vertex::VertexInfo,::Val{s}) where s = getfield(vertex,s)

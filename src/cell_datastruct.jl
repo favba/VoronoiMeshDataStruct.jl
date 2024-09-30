@@ -88,6 +88,10 @@ max_n_edges(::Type{<:CellInfo{B,N}}) where {B,N} = N
 integer_precision(::Type{<:CellInfo{N,B,T}}) where {N,B,T} = T
 float_precision(::Type{<:CellInfo{N,B,T,TF}}) where {N,B,T,TF} = TF
 
+for fun in (:on_a_sphere, :max_n_edges, :integer_precision, :float_precision)
+    @eval $fun(::T) where {T <: Union{<:CellInfo, <:CellBase}} = $fun(T)
+end
+
 Base.getproperty(cell::CellInfo,s::Symbol) = _getproperty(cell,Val(s))
 
 _getproperty(cell::CellInfo,::Val{s}) where s = getfield(cell,s)
