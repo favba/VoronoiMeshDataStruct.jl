@@ -106,7 +106,7 @@ function compute_edge_normals_periodic!(n,cpos,cellsOnEdge,xp::Number,yp::Number
     return n
 end
 
-function compute_edge_normals(n,cpos,cellsOnEdge)
+function compute_edge_normals!(n,cpos,cellsOnEdge)
     check_sizes(size(cellsOnEdge),size(n))
 
     @parallel for i in eachindex(cellsOnEdge)
@@ -122,7 +122,7 @@ end
 compute_edge_normals!(n,edges::EdgeBase{false},cells::CellBase{false},xp::Number,yp::Number) = compute_edge_normals_periodic!(n,cells.position,edges.indices.cells,xp,yp)
 compute_edge_normals!(n,mesh::VoronoiMesh{false}) = compute_edge_normals!(n,mesh.edges.base,mesh.cells.base,mesh.attributes[:x_period]::Float64,mesh.attributes[:y_period]::Float64)
 
-compute_edge_normals!(n,edges::EdgeBase{true},cells::CellBase{true}) = compute_edge_normals(n,cells.position,edges.indices.cells)
+compute_edge_normals!(n,edges::EdgeBase{true},cells::CellBase{true}) = compute_edge_normals!(n,cells.position,edges.indices.cells)
 compute_edge_normals!(n,mesh::VoronoiMesh{true}) = compute_edge_normals!(n,mesh.edges.base,mesh.cells.base)
 
 function compute_edge_normals_periodic(cpos,cellsOnEdge,xp::Number,yp::Number)
@@ -472,3 +472,68 @@ end
 function compute_weightsOnEdge_trisk(mesh::VoronoiMesh)
     return compute_weightsOnEdge_trisk(mesh.verticesOnEdge,mesh.cellsOnEdge,mesh.edgesOnEdge,mesh.dcEdge,mesh.dvEdge,mesh.kiteAreasOnVertex,mesh.cellsOnVertex,mesh.nEdgesOnCell,mesh.areaCell)
 end
+
+@inline function unsafe_drop_element(t::NTuple{3}, el)
+    if t[1] == el
+        return (t[2], t[3])
+    elseif t[2] == el
+        return (t[1], t[3])
+    else
+        return (t[1], t[2])
+    end
+end
+
+@inline function unsafe_tuple2_intersection(t1::NTuple{2}, t2::NTuple{2})
+    t11, t12 = t1
+    t21, t22 = t2
+    t11 == t21 ? t11 : t11 == t22 ? t11 : t12
+end
+
+@inline function find_cellOnCell(current_cell, shared_vertex1, shared_vertex2, cellsOnVertex)
+    cells_v1 = cellsOnVertex[shared_vertex1]
+    cells_v2 = cellsOnVertex[shared_vertex2]
+    cells1 = unsafe_drop_element(cells_v1, current_cell)
+    cells2 = unsafe_drop_element(cells_v2, current_cell)
+    return unsafe_tuple2_intersection(cells1, cells2)
+end
+
+function compute_cellsOnCell!(cellsOnCell, verticesOnCell, cellsOnVertex)
+# The ordering of the indices is the same as seen in the meshes provided by NCAR
+# They DO NOT follow what is described in their Mesh Specification document
+# It seems the document (at least v1.0) specification is not correct.
+# The ordering here is that cellsOncell[n] is between verticesOnCell[n+1] and verticesOnCell[n]
+# Their document says cellsOnCell[n] should be between verticesOnCell[n] and verticesOnCell[n-1]
+# but their own meshes don't follow this rule and uses the ordering used by the code below
+
+    @parallel for c in eachindex(verticesOnCell)
+
+        @inbounds begin
+            cells = eltype(cellsOnCell)()
+            vertices = verticesOnCell[c]
+            lv = length(vertices)
+
+            vlead = vertices[1]
+            for i in 2:lv
+                vprev = vlead
+                vlead = vertices[i]
+                cells = push(cells, find_cellOnCell(c, vlead, vprev, cellsOnVertex))
+            end
+            vprev = vlead
+            vlead = vertices[1]
+            cells = push(cells, find_cellOnCell(c, vlead, vprev, cellsOnVertex))
+
+            cellsOnCell[c] = cells
+        end
+    end
+    return cellsOnCell
+end
+
+function compute_cellsOnCell(verticesOnCell, cellsOnVertex)
+    cellsOnCell = similar(verticesOnCell)
+    return compute_cellsOnCell!(cellsOnCell, verticesOnCell, cellsOnVertex)
+end
+
+compute_cellsOnCell(cells::Union{<:CellInfo, <:CellBase}, vertices::Union{<:VertexBase, <:VertexInfo}) = compute_cellsOnCell(cells.indices.vertices, vertices.indices.cells)
+
+compute_cellsOnCell(mesh::VoronoiMesh) = compute_cellsOnCell(mesh.cells, mesh.vertices)
+

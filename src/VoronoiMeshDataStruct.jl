@@ -30,6 +30,8 @@ export create_cell_linesegments, create_cell_linesegments_periodic
 export graph_partition, find_obtuse_triangles
 export select_kite_area, periodic_edges_mask, periodic_vertices_mask
 
+export compute_cellsOnCell, compute_cellsOnCell!
+
 export @parallel
 
 include("utils_pre.jl")
