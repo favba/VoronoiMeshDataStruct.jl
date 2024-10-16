@@ -12,7 +12,7 @@ function graph_partition(cellsOnCell::Vector{<:ImmutableVector},nEdges::Integer)
     return outIO
 end
 
-graph_partition(cells::Union{CellBase,CellInfo},edges::Union{EdgeBase,EdgeInfo}) = graph_partition(cells.indices.cells,edges.n)
+graph_partition(cells::Union{CellBase,Cells},edges::Union{EdgeBase,EdgeInfo}) = graph_partition(cells.indices.cells,edges.n)
 
 graph_partition(mesh::VoronoiMesh) = graph_partition(mesh.cells,mesh.edges)
 

@@ -2,7 +2,7 @@ module VoronoiMeshDataStruct
 
 using TensorsLite, TensorsLiteGeometry, ImmutableVectors
 
-export CellConnectivity, CellBase, CellInfo
+export CellConnectivity, CellBase, Cells
 export VertexConnectivity, VertexBase, VertexInfo
 export EdgeConnectivity, EdgeBase, EdgeVelocityReconstruction, EdgeInfo
 export VoronoiMesh
@@ -43,8 +43,8 @@ include("vertices_datastruct.jl")
 include("edges_datastruct.jl")
 
 struct VoronoiMesh{S,N,N2,TI,TF,Tz}
+    cells::Cells{S,N,TI,TF,Tz}
     vertices::VertexInfo{S,TI,TF,Tz}
-    cells::CellInfo{S,N,TI,TF,Tz}
     edges::EdgeInfo{S,N2,TI,TF,Tz}
     attributes::Dict{Symbol,Union{String,Float64,Float32,Int64,Int32}}
 end

@@ -533,7 +533,7 @@ function compute_cellsOnCell(verticesOnCell, cellsOnVertex)
     return compute_cellsOnCell!(cellsOnCell, verticesOnCell, cellsOnVertex)
 end
 
-compute_cellsOnCell(cells::Union{<:CellInfo, <:CellBase}, vertices::Union{<:VertexBase, <:VertexInfo}) = compute_cellsOnCell(cells.indices.vertices, vertices.indices.cells)
+compute_cellsOnCell(cells::Union{<:Cells, <:CellBase}, vertices::Union{<:VertexBase, <:VertexInfo}) = compute_cellsOnCell(cells.indices.vertices, vertices.indices.cells)
 
 compute_cellsOnCell(mesh::VoronoiMesh) = compute_cellsOnCell(mesh.cells, mesh.vertices)
 

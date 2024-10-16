@@ -51,15 +51,15 @@ struct CellBase{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number}
     nEdges::Vector{UInt8} 
     position::TensorsLite.VecMaybe2DxyArray{TF,Tz,1}
     periods::NTuple{2,TF}
-    sphere_radius::NTuple{2,TF}
+    sphere_radius::TF
     onSphere::Val{S}
 
     function CellBase(position::Vec2DxyArray{TF,1}, indices::CellConnectivity{MN, TI}, xp::Number, yp::Number) where {TF, MN, TI}
-        return new{false, MN, TI, TF, TensorsLite.Zeros.Zero}(length(position), indices, indices.vertices.length, position, TF.(xp ,yp), TF(0.0), Val{false}())
+        return new{false, MN, TI, TF, TensorsLite.Zeros.Zero}(length(position), indices, indices.vertices.length, position, (TF(xp) ,TF(yp)), TF(0.0), Val{false}())
     end
 
     function CellBase(position::Vec3DArray{TF,1}, indices::CellConnectivity{MN, TI}, r::Number) where {TF, MN, TI}
-        return new{true, MN, TI, TF, TF}(length(position), indices, indices.vertices.length, position, TF.(0,0), r, Val{true}())
+        return new{true, MN, TI, TF, TF}(length(position), indices, indices.vertices.length, position, (zero(TF), zero(TF)), r, Val{true}())
     end
 end
 
@@ -93,20 +93,14 @@ struct Cells{S,MAX_N_EDGES,TI<:Integer,TF<:Real,Tz<:Number}
     longitude::Vector{TF}
     "Latitude of Cell center (if on the sphere)"
     latitude::Vector{TF}
-    """Mesh density function evaluated at cell (used when generating the cell)"""
-    meshDensity::Vector{TF}
     """Cell's area"""
     area::Vector{TF}
     """Cartesian components of the vector pointing in the local vertical direction for a cell"""
     verticalUnitVectors::TensorsLite.VecMaybe2DxyArray{Tz,TF,1} # Actually, maybe 1Dz
     """Tuple with pair of Vectors of Vec3D's structs defining the tangent plane at a cell"""
     tangentPlane::NTuple{2,TensorsLite.VecMaybe2DxyArray{TF,Tz,1}}
-   """Coefficients to reconstruct velocity vectors at cell centers"""
-    coeffsReconstruct::TensorsLite.VecMaybe2DxyArray{TF,Tz,2}
-
-    function Cells(cell::CellBase{N,S,TI,TF,Tz}) where {N,S,TI,TF,Tz}
-        return new{N,S,TI,TF,Tz}(cell)
-    end
+    """Mesh density function evaluated at cell (used when generating the cell)"""
+    meshDensity::Vector{TF}
 end
 
 on_a_sphere(::Type{<:Cells{B}}) where B = B
@@ -121,13 +115,13 @@ end
 Base.getproperty(cell::Cells,s::Symbol) = _getproperty(cell,Val(s))
 _getproperty(cell::Cells,::Val{s}) where s = getfield(cell,s)
 
-for s in (fieldnames(Cells)..., names_in_cell_base...)
-    @eval _getproperty(cell::Cells,::Val{$(QuoteNode(s))}) = _getproperty(getfield(cell,:base),$(QuoteNode(s)))
+for s in (fieldnames(CellBase)..., names_in_cell_base...)
+    @eval _getproperty(cell::Cells,::Val{$(QuoteNode(s))}) = _getproperty(getfield(cell,:base),Val{$(QuoteNode(s))}())
 end
 
-for (s,nc) in pairs((longitude=:lonCell, latitude=:latCell, meshDensity=:meshDensity,
-                     area=:areaCell, verticalUnitVectors=:localVerticalUnitVectors,
-                     tangentPlane=:cellTangentPlane()))
+for (s,nc) in pairs((longitude=:lonCell, latitude=:latCell, area=:areaCell,
+                     verticalUnitVectors=:localVerticalUnitVectors,
+                     tangentPlane=:cellTangentPlane))
 
     @eval _getproperty(cell::Cells,::Val{$(QuoteNode(nc))}) = getfield(cell,$(QuoteNode(s)))
 end

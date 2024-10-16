@@ -11,12 +11,20 @@ function _on_a_sphere(ncfile::NCDatasets.NCDataset)
     end
 end
 
-function construct_elementsOnElement!(elementsOnElement::Vector{ImmutableVector{maxEdges,TE}}, elementsOnElementArray::AbstractMatrix{TE}, nElemtensOnElement::AbstractVector{TI}) where {maxEdges,TE,TI}
+function construct_elementsOnElement!(elementsOnElement::AbstractVector{ImmutableVector{maxEdges,TE}}, elementsOnElementArray::AbstractMatrix{TE}, nElemtensOnElement::AbstractVector{TI}) where {maxEdges,TE,TI}
     n = Val{maxEdges}()
     @parallel for k in axes(elementsOnElementArray,2)
         @inbounds elementsOnElement[k] = ImmutableVector{maxEdges}(ntuple(i->(@inbounds elementsOnElementArray[i,k]), n),nElemtensOnElement[k])
     end
     return elementsOnElement
+end
+
+function copy_matrix_to_tuple_vector!(tuple_vector::AbstractVector{NTuple{N,T}}, matrix::AbstractMatrix{T2}) where {N, T, T2}
+    n = Val{N}()
+    @parallel for k in axes(matrix,2)
+        @inbounds tuple_vector[k] = ntuple(i->(convert(T, @inbounds(matrix[i,k]))), n)
+    end
+    return tuple_vector
 end
 
 function construct_elementsOnElement(n::Val{maxEdges},elementsOnElementArray::AbstractMatrix{TE},nElemtensOnElement::AbstractVector{TI}) where {maxEdges,TE,TI}
@@ -26,25 +34,29 @@ end
 
 function VoronoiMeshDataStruct.CellConnectivity(me::Val{maxEdges},nEdgesOnCell::AbstractVector{TI},ncfile::NCDatasets.NCDataset) where {maxEdges,TI}
     verticesOnCellArray = (ncfile["verticesOnCell"][:,:])::Matrix{Int32}
-    verticesOnCell = Vector{ImmutableVector{maxEdges, TI}}(undef, size(verticesOnCellArray, 2))
-    t1 = Threads.@spawn construct_elementsOnElement!($verticesOnCell, $verticesOnCellArray, $nEdgesOnCell)
+    l = UInt8.(nEdgesOnCell)
+    nCells = length(l)
+    verticesOnCell = ImmutableVectorArray(Vector{NTuple{maxEdges, TI}}(undef,nCells),l)
+    t1 = Threads.@spawn copy_matrix_to_tuple_vector!($(verticesOnCell.data), $verticesOnCellArray)
 
     edgesOnCellArray = (ncfile["edgesOnCell"][:,:])::Matrix{Int32}
-    edgesOnCell = Vector{ImmutableVector{maxEdges, TI}}(undef, size(edgesOnCellArray, 2))
-    t2 = Threads.@spawn construct_elementsOnElement!($edgesOnCell, $edgesOnCellArray, $nEdgesOnCell)
+    edgesOnCell = ImmutableVectorArray(Vector{NTuple{maxEdges, TI}}(undef,nCells),l)
+    t2 = Threads.@spawn copy_matrix_to_tuple_vector!($(edgesOnCell.data), $edgesOnCellArray)
 
     cellsOnCellArray = (ncfile["cellsOnCell"][:,:])::Matrix{Int32}
-    cellsOnCell = construct_elementsOnElement(me,cellsOnCellArray,nEdgesOnCell)
+    cellsOnCell = ImmutableVectorArray(Vector{NTuple{maxEdges, TI}}(undef,nCells),l)
+    copy_matrix_to_tuple_vector!(cellsOnCell.data, cellsOnCellArray)
 
     wait(t1)
     wait(t2)
-    return CellConnectivity(verticesOnCell,edgesOnCell,cellsOnCell)
+    return CellConnectivity(verticesOnCell, cellsOnCell, edgesOnCell)
 end
 
 for N in 6:12
     for T in (Int64,Int32)
         for TE in (Int64,Int32,Float64,Float32)
             precompile(construct_elementsOnElement,(Val{N},Matrix{TE},Vector{T}))
+            precompile(copy_matrix_to_tuple_vector!,(ImVecArray{N, T, 1}, Matrix{TE}))
         end
         precompile(VoronoiMeshDataStruct.CellConnectivity,(Val{N},Vector{T},NCDatasets.NCDataset{Nothing,Missing}))
     end
@@ -76,9 +88,17 @@ function VoronoiMeshDataStruct.CellBase(onSphere::Val{on_sphere},mE::Val{maxEdge
     indices = CellConnectivity(mE,nEdges,ncfile)
     x = (ncfile["xCell"][:])::Vector{Float64}
     y = (ncfile["yCell"][:])::Vector{Float64}
-    position = on_sphere ? VecArray(x = x, y = y, z=(ncfile["zCell"][:])::Vector{Float64}) : VecArray(x = x, y = y)
 
-    return CellBase(length(nEdges),indices,nEdges,position,onSphere)
+    if on_sphere
+        position3D = VecArray(x = x, y = y, z=(ncfile["zCell"][:])::Vector{Float64})
+        sphere_radius = ncfile.attrib["sphere_radius"]::Float64
+        return CellBase(position3D, indices, sphere_radius)
+    else
+        position2D = VecArray(x = x, y = y)
+        xp = ncfile.attrib["x_period"]::Float64
+        yp = ncfile.attrib["y_period"]::Float64
+        return CellBase(position2D, indices, xp, yp)
+    end
 end
 
 for N in 6:12
@@ -123,65 +143,59 @@ end
 
 precompile(VoronoiMeshDataStruct.CellBase,(NCDatasets.NCDataset{Nothing,Missing},))
 
+#const cell_info_vectors = (longitude="lonCell", latitude="latCell",
+#                          meshDensity="meshDensity",indexToID="indexToCellID",
+#                          area="areaCell", bdyMask="bdyMaskCell")
+
 const cell_info_vectors = (longitude="lonCell", latitude="latCell",
-                          meshDensity="meshDensity",indexToID="indexToCellID",
-                          area="areaCell", bdyMask="bdyMaskCell")
+                          meshDensity="meshDensity", area="areaCell")
 
-const cell_info_matrices_max_edges = (defcA="defc_a", defcB="defc_b",
-                                      xGradientCoeff="cell_gradient_coef_x", yGradientCoeff="cell_gradient_coef_y")
+#const cell_info_matrices_max_edges = (defcA="defc_a", defcB="defc_b",
+#                                      xGradientCoeff="cell_gradient_coef_x", yGradientCoeff="cell_gradient_coef_y")
 
-function VoronoiMeshDataStruct.CellInfo(ncfile::NCDatasets.NCDataset)
+function VoronoiMeshDataStruct.Cells(ncfile::NCDatasets.NCDataset)
     cells = CellBase(ncfile)
-    return CellInfo(cells,ncfile)
+    return Cells(cells,ncfile)
 end
-precompile(VoronoiMeshDataStruct.CellInfo,(NCDatasets.NCDataset{Nothing,Missing},))
+precompile(VoronoiMeshDataStruct.Cells,(NCDatasets.NCDataset{Nothing,Missing},))
 
-function VoronoiMeshDataStruct.CellInfo(cells::CellBase{on_sphere,max_nedges},ncfile::NCDatasets.NCDataset) where {on_sphere,max_nedges}
+function VoronoiMeshDataStruct.Cells(cells::CellBase{on_sphere,max_nedges},ncfile::NCDatasets.NCDataset) where {on_sphere,max_nedges}
 
-    cellinfo = CellInfo(cells)
-
-    for (field_name, nc_name) in pairs(cell_info_vectors)
-        if haskey(ncfile,nc_name)
-            setproperty!(cellinfo,field_name,ncfile[nc_name][:])
-        end
-    end
+    longitude = ncfile["lonCell"][:]::Vector{Float64}
+    latitude = ncfile["latCell"][:]::Vector{Float64}
+    area = ncfile["areaCell"][:]::Vector{Float64}
+    meshDensity = ncfile["meshDensity"][:]::Vector{Float64}
 
     if haskey(ncfile,"localVerticalUnitVectors")
         lvuva = ncfile["localVerticalUnitVectors"]
-        cellinfo.verticalUnitVectors = on_sphere ? VecArray(x=lvuva[1,:], y=lvuva[2,:], z=lvuva[3,:]) : VecArray(z=lvuva[3,:])
+        verticalUnitVectors = on_sphere ? VecArray(x=lvuva[1,:], y=lvuva[2,:], z=lvuva[3,:]) : VecArray(z=lvuva[3,:])
+    else
+        verticalUnitVectors = on_sphere ? normalize(cells.position) : VecArray(z=ones(cells.n))
     end
 
     if haskey(ncfile,"cellTangentPlane")
         ctp = ncfile["cellTangentPlane"]
-        cellinfo.tangentPlane = on_sphere ?
+        tangentPlane = on_sphere ?
                                 (VecArray(x=ctp[1,1,:],y=ctp[2,1,:],z=ctp[3,1,:]),VecArray(x=ctp[1,2,:],y=ctp[2,2,:],z=ctp[3,2,:])) :
                                 (VecArray(x=ctp[1,1,:],y=ctp[2,1,:]),VecArray(x=ctp[1,2,:],y=ctp[2,2,:]))
-    end
-
-    sl = Base.OneTo(max_nedges)
-    for (field_name, nc_name) in pairs(cell_info_matrices_max_edges)
-        if haskey(ncfile,nc_name)
-            setproperty!(cellinfo,field_name,ncfile[nc_name][sl,:])
+    else
+        tangentPlane = if on_sphere
+            (VecArray(x=zeros(0), y = zeros(0), z= zeros(0)),
+             VecArray(x=zeros(0), y = zeros(0), z= zeros(0)))
+        else
+            (VecArray(x=zeros(0), y = zeros(0)),
+             VecArray(x=zeros(0), y = zeros(0)))
         end
     end
 
-    if haskey(ncfile,"coeffs_reconstruct")
-        coeffR = ncfile["coeffs_reconstruct"]
-        sl = Base.OneTo(max_nedges)
-        coeffsReconstruct = on_sphere ?
-                            VecArray(x=coeffR[1,sl,:], y=coeffR[2,sl,:], z=coeffR[3,sl,:]) :
-                            VecArray(x=coeffR[1,sl,:], y=coeffR[2,sl,:])
-        cellinfo.coeffsReconstruct = coeffsReconstruct
-    end
-
-    return cellinfo    
+    return Cells(cells, longitude, latitude, area, verticalUnitVectors, tangentPlane, meshDensity)
 end
 
 for N in 6:12
     for on_sphere in (true,false)
         for TF in (Float64,Float32)
             for Tz in (Float64,Float32,Zero)
-                precompile(VoronoiMeshDataStruct.CellInfo,(VoronoiMeshDataStruct.CellBase{on_sphere,N,Int32,TF,Tz}, NCDatasets.NCDataset{Nothing,Missing}))
+                precompile(VoronoiMeshDataStruct.Cells,(VoronoiMeshDataStruct.CellBase{on_sphere,N,Int32,TF,Tz}, NCDatasets.NCDataset{Nothing,Missing}))
             end
         end
     end
@@ -327,13 +341,13 @@ function VoronoiMeshDataStruct.VoronoiMesh(ncfile::NCDatasets.NCDataset)
         val isa String && (val = String(strip(val)))
         attributes[Symbol(key)] = val
     end
-    return VoronoiMesh(VertexInfo(ncfile),CellInfo(ncfile),EdgeInfo(ncfile),attributes) 
+    return VoronoiMesh(Cells(ncfile), VertexInfo(ncfile), EdgeInfo(ncfile), attributes) 
 end
 
 precompile(VoronoiMeshDataStruct.VoronoiMesh,(NCDatasets.NCDataset{Nothing,Missing},))
 
 for func in  (:VoronoiMesh,
-              :CellInfo,:CellBase,:CellConnectivity,
+              :Cells,:CellBase,:CellConnectivity,
               :VertexInfo,:VertexBase,:VertexConnectivity,
               :EdgeInfo,:EdgeBase,:EdgeConnectivity,:EdgeVelocityReconstruction)
 
